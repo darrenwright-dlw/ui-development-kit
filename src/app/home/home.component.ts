@@ -43,6 +43,7 @@ type Tenant = {
   authtype: AuthMethods;
   tenantName: string;
   bypassTLS?: boolean;
+  caCertPath?: string;
 }
 
 type ComponentState = {
@@ -98,6 +99,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     authtype: 'oauth',
     tenantName: '',
     bypassTLS: false,
+    caCertPath: '',
   }
 
   // State management
@@ -508,6 +510,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         clientId: clientId,
         clientSecret: clientSecret,
         bypassTLS: this.state.actualTenant.bypassTLS || false,
+        caCertPath: this.state.actualTenant.caCertPath || '',
       });
 
       if (result.success) {
@@ -709,6 +712,43 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   // Utility Methods:
+
+  onTlsBypassChange(): void {
+    if (this.state.actualTenant.bypassTLS) {
+      // If TLS bypass is enabled, clear the CA certificate path
+      this.state.actualTenant.caCertPath = '';
+    }
+  }
+
+  onCaCertPathChange(): void {
+    if (this.state.actualTenant.caCertPath && this.state.actualTenant.caCertPath.trim()) {
+      // If CA certificate path is provided, disable TLS bypass
+      this.state.actualTenant.bypassTLS = false;
+    }
+  }
+
+  async browseCaCertFile(): Promise<void> {
+    if (this.state.isWebMode) {
+      this.showSnackbar('File browsing is not available in web mode. Please enter the full file path manually.');
+      return;
+    }
+
+    try {
+      const result = await this.electronService.getApi().browseForFile();
+      
+      if (result.success && result.filePath) {
+        this.state.actualTenant.caCertPath = result.filePath;
+        // When a certificate is selected, disable TLS bypass
+        this.state.actualTenant.bypassTLS = false;
+        this.showSnackbar('Certificate file selected successfully');
+      } else if (!result.canceled) {
+        this.showSnackbar('Failed to select file: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error browsing for CA certificate file:', error);
+      this.showSnackbar('Failed to open file browser');
+    }
+  }
 
   showSnackbar(message: string): void {
     this.snackBar.open(message, 'Close', {

@@ -165,15 +165,6 @@ export const OAuthLogin = async ({ tenant, baseAPIUrl, environment }: { tenant: 
         // Step 1: Generate fresh RSA key pair for this authentication session
         const publicKeyBase64 = await generateFreshKeyPair();
         
-        // Handle TLS bypass for certain situations
-        const envConfig = getConfigEnvironment(environment);
-        if (envConfig.bypassTLS) {
-            console.log(`TLS bypass enabled for OAuth login in environment: ${environment}`);
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        } else {
-            // Ensure default behavior if not bypassing
-            delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-        }
         
             // Step 2: Initiate authentication flow with the public key
             const authResponse = await fetch(authLambdaAuthURL, {
@@ -253,14 +244,6 @@ export const refreshOAuthToken = async (environment: string): Promise<void> => {
             tenant: tenant || environment
         };
 
-        // Handle TLS bypass for certain situations
-        if (envConfig.bypassTLS) {
-            console.log(`TLS bypass enabled for OAuth login in environment: ${environment}`);
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        } else {
-            // Ensure default behavior if not bypassing
-            delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-        }
 
 
             const response = await fetch(authLambdaRefreshURL, {

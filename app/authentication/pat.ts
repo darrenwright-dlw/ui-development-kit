@@ -125,14 +125,6 @@ export const refreshPATToken = async (environment: string): Promise<void> => {
       const tokenUrl = `${apiUrl}/oauth/token`;
       const authHeader = Buffer.from(`${storedTokens.clientId}:${storedTokens.clientSecret}`).toString('base64');
   
-        // Handle TLS bypass for certain situations
-        if (envConfig.bypassTLS) {
-            console.log(`TLS bypass enabled for OAuth login in environment: ${environment}`);
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        } else {
-            // Ensure default behavior if not bypassing
-            delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-        }
   
         const response = await fetch(tokenUrl, {
           method: 'POST',

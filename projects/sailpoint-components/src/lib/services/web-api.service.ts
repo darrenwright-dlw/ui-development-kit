@@ -41,6 +41,7 @@ export type UpdateEnvironmentRequest = {
   clientId?: string;
   clientSecret?: string;
   bypassTLS?: boolean;
+  caCertPath?: string;
 }
 
 export type Tenant = {
