@@ -208,7 +208,11 @@ export class WebApiService implements ElectronAPIInterface {
       throw new Error(`API call failed: ${error}`);
     }
     
-    return await response.json() as T;
+    const data = await response.json();
+    
+    // For SDK method calls, the server returns the full ApiResponse object
+    // For other API calls, return just the data
+    return data as T;
   }
 
   // Authentication and Connection methods
@@ -286,6 +290,9 @@ export class WebApiService implements ElectronAPIInterface {
   [key: string]: any;
   
   async callSdkMethod(methodName: string, ...args: any[]): Promise<any> {
-    return this.apiCall(`sdk/${methodName}`, 'POST', { args });
+    // Most SDK methods expect the first argument to be the request parameters object
+    // For compatibility with the SDK wrapper, pass the first argument directly
+    const requestParameters = args[0] || {};
+    return this.apiCall(`sdk/${methodName}`, 'POST', { args: requestParameters });
   }
 }

@@ -478,6 +478,7 @@ app.post('/api/sdk/:methodName', rateLimiter, csrfProtection, async (req: Reques
       basePath
     );
     
+    // Send the full result (includes data, headers, status, etc.)
     res.json(result);
   } catch (error) {
     console.error('SDK method execution error:', error);
