@@ -132,7 +132,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     void this.loadTenants();
-
+    
     this.connectionService.connectedSubject$.subscribe((connection) => {
       this.state.isConnected = connection.connected;
       this.state.name = connection.name || '';

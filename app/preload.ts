@@ -9,7 +9,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   disconnectFromISC: () => ipcMain.invoke('disconnect-from-isc'),
   checkAccessTokenStatus: () => ipcMain.invoke('check-access-token-status'),
   getCurrentTokenDetails: (environment: string) => ipcMain.invoke('get-current-token-details', environment),
-  
   // Token management
   refreshTokens: () => ipcMain.invoke('refresh-tokens'),
   validateTokens: (environment: string) => ipcMain.invoke('validate-tokens', environment),

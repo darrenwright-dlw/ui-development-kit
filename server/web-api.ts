@@ -439,7 +439,7 @@ app.get('/api/auth/csrf-token', rateLimiter, (req: Request, res: Response) => {
 });
 
 // SDK API proxy endpoint
-app.post('/api/sdk/:methodName', rateLimiter, csrfProtection, (req: Request, res: Response) => {
+app.post('/api/sdk/:methodName', rateLimiter, csrfProtection, async (req: Request, res: Response) => {
   console.log('POST /api/sdk called', req.params);
   const { methodName } = req.params;
   const { args } = req.body;
@@ -448,13 +448,44 @@ app.post('/api/sdk/:methodName', rateLimiter, csrfProtection, (req: Request, res
   if (!req.session.isAuthenticated || !tokenData) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
-  
-  // Mock SDK API response
-  res.json({
-    data: {
-      result: `Mock response for ${methodName}`
+
+  // Check if access token is valid
+  const now = new Date();
+  if (tokenData.accessExpiry <= now) {
+    return res.status(401).json({ error: 'Access token expired' });
+  }
+
+  try {
+    // Import the generated SDK wrapper
+    const { executeSdkMethod } = require('./sailpoint-sdk-web');
+    
+    // Extract tenant name for API base path
+    let basePath = '';
+    try {
+      const tenantUrl = new URL(SERVER_CONFIG.tenantUrl);
+      const tenantName = tenantUrl.hostname.split('.')[0];
+      basePath = `https://${tenantName}.api.identitynow-demo.com`;
+    } catch (error) {
+      console.error('Failed to construct API base path:', error);
+      return res.status(500).json({ error: 'Failed to determine API base path' });
     }
-  });
+
+    // Execute the SDK method
+    const result = await executeSdkMethod(
+      methodName,
+      args || {},
+      tokenData.accessToken,
+      basePath
+    );
+    
+    res.json(result);
+  } catch (error) {
+    console.error('SDK method execution error:', error);
+    res.status(500).json({ 
+      error: 'SDK method execution failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 // Config endpoints

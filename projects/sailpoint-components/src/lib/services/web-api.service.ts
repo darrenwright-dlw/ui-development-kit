@@ -10,7 +10,6 @@ export interface ElectronAPIInterface {
   disconnectFromISC: () => Promise<void>;
   checkAccessTokenStatus: () => Promise<AccessTokenStatus>;
   getCurrentTokenDetails: (environment: string) => Promise<{ tokenDetails: TokenDetails | undefined, error?: string }>;
-  
   // Token management
   refreshTokens: () => Promise<{ success: boolean, error?: string }>;
   validateTokens: (environment: string) => Promise<{ isValid: boolean, needsRefresh: boolean, error?: string }>;
