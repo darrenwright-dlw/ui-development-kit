@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, takeUntil, Subject } from 'rxjs';
 
 /**
  * Interface that defines all the methods used from window.electronAPI
@@ -100,13 +100,14 @@ export type AuthMethods = "oauth" | "pat";
 @Injectable({
   providedIn: 'root'
 })
-export class WebApiService implements ElectronAPIInterface {
+export class WebApiService implements ElectronAPIInterface, OnDestroy {
   private apiUrl = '/api'; // Default API URL, can be configured
   private tenants: Tenant[] = [];
   private authtype: AuthMethods = 'pat';
   private activeEnvironment: string | null = null;
   private tokens: Map<string, TokenSet> = new Map();
   private csrfToken: string | null = null;
+  private destroy$ = new Subject<void>();
 
   constructor(private http: HttpClient) {
     // Create proxy to handle dynamic SDK method calls
@@ -126,6 +127,11 @@ export class WebApiService implements ElectronAPIInterface {
         return undefined;
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
   
   /**
@@ -208,8 +214,14 @@ export class WebApiService implements ElectronAPIInterface {
           throw new Error(`Unsupported HTTP method: ${method}`);
       }
       
-      return await firstValueFrom(response$);
+      return await firstValueFrom(response$.pipe(takeUntil(this.destroy$)));
     } catch (error: any) {
+      // Check if the service is being destroyed
+      if (this.destroy$.closed) {
+        console.warn('API call cancelled due to service destruction');
+        throw new Error('Service destroyed');
+      }
+      
       // Handle CSRF token errors and retry once
       if (error.status === 403 && method !== 'GET' && error.error?.includes?.('CSRF')) {
         this.csrfToken = null; // Clear cached token
