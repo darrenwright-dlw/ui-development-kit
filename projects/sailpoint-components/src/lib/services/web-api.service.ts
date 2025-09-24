@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, firstValueFrom } from 'rxjs';
 
 /**
  * Interface that defines all the methods used from window.electronAPI
@@ -106,7 +108,7 @@ export class WebApiService implements ElectronAPIInterface {
   private tokens: Map<string, TokenSet> = new Map();
   private csrfToken: string | null = null;
 
-  constructor() {
+  constructor(private http: HttpClient) {
     // Create proxy to handle dynamic SDK method calls
     return new Proxy(this, {
       get(target: WebApiService, prop: string | symbol) {
@@ -143,18 +145,14 @@ export class WebApiService implements ElectronAPIInterface {
     }
 
     try {
-      const response = await fetch(`${this.apiUrl}/auth/csrf-token`, {
-        method: 'GET',
-        credentials: 'include'
-      });
+      const response = await firstValueFrom(
+        this.http.get<{ csrfToken: string }>(`${this.apiUrl}/auth/csrf-token`, {
+          withCredentials: true
+        })
+      );
 
-      if (!response.ok) {
-        throw new Error('Failed to get CSRF token');
-      }
-
-      const { csrfToken } = await response.json() as { csrfToken: string };
-      this.csrfToken = csrfToken;
-      return csrfToken;
+      this.csrfToken = response.csrfToken;
+      return response.csrfToken;
     } catch (error) {
       console.error('Error getting CSRF token:', error);
       throw error;
@@ -162,57 +160,65 @@ export class WebApiService implements ElectronAPIInterface {
   }
 
   /**
-   * Helper method to make API calls to the web service
+   * Helper method to make API calls to the web service using Angular HttpClient
    */
-  private async apiCall<T>(endpoint: string, method: string = 'GET', body?: any): Promise<T> {
+  private async apiCall<T>(endpoint: string, method: string = 'GET', body?: unknown): Promise<T> {
     const url = `${this.apiUrl}/${endpoint}`;
     
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    let headers = new HttpHeaders({
+      'Content-Type': 'application/json'
+    });
 
     // Add CSRF token for non-GET requests
     if (method !== 'GET') {
       try {
         const csrfToken = await this.getCsrfToken();
-        headers['x-csrf-token'] = csrfToken;
+        headers = headers.set('x-csrf-token', csrfToken);
       } catch (error) {
         console.error('Failed to get CSRF token for request:', error);
         // Continue without CSRF token - let the server handle the error
       }
     }
     
-    const options: RequestInit = {
-      method,
+    const options = {
       headers,
-      credentials: 'include', // Includes cookies for session management
+      withCredentials: true // Includes cookies for session management
     };
     
-    if (body) {
-      options.body = JSON.stringify(body);
-    }
-    
-    const response = await fetch(url, options);
-    
-    if (!response.ok) {
-      // If it's a CSRF error, clear the cached token and retry once
-      if (response.status === 403 && method !== 'GET') {
-        const errorText = await response.text();
-        if (errorText.includes('CSRF')) {
-          this.csrfToken = null; // Clear cached token
-          return this.apiCall(endpoint, method, body); // Retry once
-        }
+    try {
+      let response$: Observable<T>;
+      
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response$ = this.http.get<T>(url, options);
+          break;
+        case 'POST':
+          response$ = this.http.post<T>(url, body, options);
+          break;
+        case 'PUT':
+          response$ = this.http.put<T>(url, body, options);
+          break;
+        case 'PATCH':
+          response$ = this.http.patch<T>(url, body, options);
+          break;
+        case 'DELETE':
+          response$ = this.http.delete<T>(url, options);
+          break;
+        default:
+          throw new Error(`Unsupported HTTP method: ${method}`);
       }
       
-      const error = await response.text();
-      throw new Error(`API call failed: ${error}`);
+      return await firstValueFrom(response$);
+    } catch (error: any) {
+      // Handle CSRF token errors and retry once
+      if (error.status === 403 && method !== 'GET' && error.error?.includes?.('CSRF')) {
+        this.csrfToken = null; // Clear cached token
+        return this.apiCall(endpoint, method, body); // Retry once
+      }
+      
+      console.error('API call failed:', error);
+      throw new Error(`API call failed: ${error.message || error}`);
     }
-    
-    const data = await response.json();
-    
-    // For SDK method calls, the server returns the full ApiResponse object
-    // For other API calls, return just the data
-    return data as T;
   }
 
   // Authentication and Connection methods
