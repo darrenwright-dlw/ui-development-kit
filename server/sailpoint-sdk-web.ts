@@ -68,9 +68,9 @@ export function createSdkConfiguration(accessToken: string, basePath: string): s
 }
 
 /**
- * Map of all SDK functions for web API calls
+ * Object containing all SDK functions for web API calls
  */
-export const sdkFunctions: { [key: string]: (params: any, config: sdk.Configuration) => Promise<ApiResponse<any>> } = {
+const sdkFunctionsObject: { [key: string]: (params: any, config: sdk.Configuration) => Promise<ApiResponse<any>> } = {
 
   // Get single Access Model Metadata Attribute
   getAccessModelMetadataAttribute: (requestParameters: sdk.AccessModelMetadataV2025ApiGetAccessModelMetadataAttributeRequest, apiConfig: sdk.Configuration): Promise<ApiResponse<sdk.AttributeDTOV2025>> => {
@@ -3917,7 +3917,19 @@ export const sdkFunctions: { [key: string]: (params: any, config: sdk.Configurat
 };
 
 /**
+ * Secure Map of all SDK functions for safe method lookup
+ * This prevents prototype pollution and unauthorized method access
+ */
+const sdkFunctions = new Map<string, (params: any, config: sdk.Configuration) => Promise<ApiResponse<any>>>();
+
+// Populate the Map with all SDK functions
+Object.entries(sdkFunctionsObject).forEach(([key, value]) => {
+  sdkFunctions.set(key, value);
+});
+
+/**
  * Execute an SDK method by name with parameters
+ * Uses secure Map lookup to prevent prototype pollution attacks
  */
 export async function executeSdkMethod(
   methodName: string, 
@@ -3925,13 +3937,26 @@ export async function executeSdkMethod(
   accessToken: string, 
   basePath: string
 ): Promise<ApiResponse<any>> {
-  const sdkFunction = sdkFunctions[methodName];
-  
-  if (!sdkFunction) {
+  // SECURITY: Use Map.has() to safely check if the method exists
+  // This prevents prototype pollution attacks and unauthorized method access
+  if (!sdkFunctions.has(methodName)) {
     return {
       data: null,
       status: 404,
       statusText: `SDK method '${methodName}' not found`,
+      headers: {}
+    };
+  }
+
+  // SECURITY: Use Map.get() for safe method retrieval
+  const sdkFunction = sdkFunctions.get(methodName);
+  
+  // Additional type safety check
+  if (typeof sdkFunction !== 'function') {
+    return {
+      data: null,
+      status: 500,
+      statusText: `SDK method '${methodName}' is not a valid function`,
       headers: {}
     };
   }
@@ -3946,7 +3971,7 @@ export async function executeSdkMethod(
   if (functionLength === 1) {
     // Function only takes config parameter: (config: Configuration)
     console.log('Calling SDK function with config only');
-    result = await (sdkFunction as any)(config);
+    result = await (sdkFunction as (config: sdk.Configuration) => Promise<ApiResponse<any>>)(config);
   } else {
     // Function takes params and config: (params: any, config: Configuration)
     console.log('Calling SDK function with params and config');
