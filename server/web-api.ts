@@ -64,6 +64,18 @@ const PORT = process.env.PORT || 3000;
 // Trust proxy when running in Lambda/API Gateway
 if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
   app.set('trust proxy', true);
+
+  // Strip stage name from paths in Lambda environment
+  app.use((req, res, next) => {
+    // Remove stage name (like /prod, /dev, /stage) from the beginning of the path
+    req.url = req.url.replace(/^\/[^\/]+/, '');
+    // Ensure we don't end up with an empty path
+    if (!req.url || req.url === '') {
+      req.url = '/';
+    }
+    console.log('Original URL modified to:', req.url);
+    next();
+  });
 }
 
 // Initialize CSRF tokens
