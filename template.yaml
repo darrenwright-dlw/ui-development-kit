@@ -56,7 +56,6 @@ Resources:
       Environment:
         Variables:
           NODE_ENV: !Ref Environment
-          CORS_ORIGIN: !Sub "https://${UiDevKitCloudFrontDistribution.DomainName}"
       Events:
         # Catch-all API routes
         ApiProxy:
