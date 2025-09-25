@@ -61,6 +61,11 @@ declare module 'express-session' {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy when running in Lambda/API Gateway
+if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  app.set('trust proxy', true);
+}
+
 // Initialize CSRF tokens
 const tokens = new Tokens();
 
@@ -477,9 +482,14 @@ app.get('/api/config', rateLimiter, (req: Request, res: Response) => {
 });
 
 
-// Serve the Angular app for all other routes
+// Serve the Angular app for all other routes (only in local development)
 app.get('*', rateLimiter, (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
+  // In Lambda, don't try to serve static files - that's handled by CloudFront/S3
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    res.status(404).json({ error: 'Static files are served by CloudFront in Lambda environment' });
+  } else {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  }
 });
 
 // Export app for Lambda or other environments
