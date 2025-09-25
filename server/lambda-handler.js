@@ -9,9 +9,11 @@ if (!app) {
 }
 
 console.log('Express app imported successfully for Lambda handler');
-console.log('App type:', typeof app);
-console.log('App constructor:', app.constructor ? app.constructor.name : 'no constructor');
-console.log('App listen method exists:', typeof app.listen);
+
+// Try the configure method instead of direct call
+const handler = serverlessExpress.configure({
+  app: app
+});
 
 // Export the Lambda handler
-exports.handler = serverlessExpress(app);
+exports.handler = handler;
