@@ -10,10 +10,10 @@ if (!app) {
 
 console.log('Express app imported successfully for Lambda handler');
 
-// Try the configure method instead of direct call
+// Try the configure method with different options
 const handler = serverlessExpress.configure({
   app: app,
-  stripBasePath: '/prod'
+  resolutionMode: 'CALLBACK'
 });
 
 // Export the Lambda handler
