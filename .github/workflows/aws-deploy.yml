@@ -116,6 +116,9 @@ jobs:
       - name: Update Angular environment with API URL
         run: |
           echo "Injecting API URL: $API_URL"
+          echo "Original environment file contents:"
+          cat src/environments/environment.web.prod.ts
+
           # Create a temporary environment file with the dynamic API URL
           cat > src/environments/environment.web.prod.dynamic.ts << EOF
           export const APP_CONFIG = {
@@ -133,10 +136,24 @@ jobs:
           # Replace the original environment file
           mv src/environments/environment.web.prod.dynamic.ts src/environments/environment.web.prod.ts
 
+          echo "Updated environment file contents:"
+          cat src/environments/environment.web.prod.ts
+
       - name: Build Angular application
         run: npm run build -- -c web-production
         env:
           NODE_OPTIONS: --max_old_space_size=4096
+
+      - name: Verify built files contain correct API URL
+        run: |
+          echo "Checking if built files contain the API URL..."
+          if grep -r "$API_URL" ./dist/; then
+            echo "✅ API URL found in built files"
+          else
+            echo "❌ API URL NOT found in built files"
+            echo "Searching for any webApiUrl references:"
+            grep -r "webApiUrl" ./dist/ || echo "No webApiUrl found"
+          fi
 
       - name: Upload Angular app to S3
         run: |
