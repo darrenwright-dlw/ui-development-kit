@@ -182,7 +182,7 @@ Outputs:
     
   ApiGatewayURL:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${UiDevKitApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/"
+    Value: !Sub "https://${UiDevKitApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/api"
     
   S3BucketName:
     Description: "S3 Bucket for hosting web frontend"

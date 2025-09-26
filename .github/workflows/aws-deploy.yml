@@ -66,17 +66,12 @@ jobs:
           npm ci
           cd server && npm ci
 
-      - name: Build Angular application
-        run: npm run build -- -c web-production
-        env:
-          NODE_OPTIONS: --max_old_space_size=4096
-
       - name: Build server TypeScript
         run: |
           cd server
           npm run build
 
-      - name: Build and deploy SAM application
+      - name: Build and deploy SAM application (backend only)
         run: |
           sam build
           if [ "$IS_PR" = "true" ]; then
@@ -117,6 +112,31 @@ jobs:
             --output text)
           echo "API_URL=$API_URL" >> $GITHUB_ENV
           echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+
+      - name: Update Angular environment with API URL
+        run: |
+          echo "Injecting API URL: $API_URL"
+          # Create a temporary environment file with the dynamic API URL
+          cat > src/environments/environment.web.prod.dynamic.ts << EOF
+          export const APP_CONFIG = {
+            production: true,
+            environment: 'WEB-PROD'
+          };
+
+          export const environment = {
+            production: true,
+            web: true,
+            webApiUrl: '$API_URL', // Dynamic URL from CloudFormation
+          };
+          EOF
+
+          # Replace the original environment file
+          mv src/environments/environment.web.prod.dynamic.ts src/environments/environment.web.prod.ts
+
+      - name: Build Angular application
+        run: npm run build -- -c web-production
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
 
       - name: Upload Angular app to S3
         run: |
