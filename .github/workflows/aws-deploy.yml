@@ -191,48 +191,34 @@ jobs:
             --distribution-id $DISTRIBUTION_ID \
             --paths "/*"
 
-      - name: Comment on PR with deployment info
+      - name: Find existing deployment comment
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: peter-evans/find-comment@v3
+        id: find-comment
         with:
-          script: |
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && comment.body.includes('🚀 Preview Deployment')
-            );
-            
-            const commentBody = `🚀 **Preview Deployment Ready**
-            
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: "🚀 **Preview Deployment Ready**"
+        continue-on-error: true
+
+      - name: Create or update deployment comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            🚀 **Preview Deployment Ready**
+
             Your changes have been deployed and are available at:
             - **Web App**: ${{ steps.outputs.outputs.cloudfront_url }}
             - **API**: ${{ steps.outputs.outputs.api_url }}
-            - **Stack**: \`${{ env.STACK_NAME }}\`
-            
+            - **Stack**: `${{ env.STACK_NAME }}`
+
             Built from commit: ${{ github.event.pull_request.head.sha }}
-            
+
             ---
-            *This comment will be updated with each new deployment.*`;
-            
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: commentBody
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: commentBody
-              });
-            }
+            *This comment will be updated with each new deployment.*
 
       - name: Output deployment URLs
         run: |
