@@ -188,6 +188,12 @@ jobs:
           fi
 
       - name: Update API Gateway CORS policy and Lambda environment variables
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          TENANT_URL: ${{ secrets.TENANT_URL }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          OAUTH_SCOPES: ${{ secrets.OAUTH_SCOPES }}
         run: |
           echo "Updating CORS policy for API Gateway: $API_GATEWAY_ID"
           echo "CloudFront URL: $CLOUDFRONT_URL"
