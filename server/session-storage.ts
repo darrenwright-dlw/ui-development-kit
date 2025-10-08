@@ -191,20 +191,25 @@ class DynamoStorage implements SessionStorage {
   }
 
   async getCsrfSecret(sessionId: string): Promise<string | null> {
+    console.log(`[STORAGE] Getting CSRF secret for session: ${sessionId}`);
     try {
       const result = await this.client.send(new GetCommand({
         TableName: this.tableName,
         Key: { pk: `csrf#${sessionId}`, sk: 'secret' }
       }));
 
-      return result.Item?.secret || null;
+      const secret = result.Item?.secret || null;
+      console.log(`[STORAGE] CSRF secret retrieved: ${secret ? 'EXISTS' : 'NOT_FOUND'}`);
+      return secret;
     } catch (error) {
-      console.error('Error getting CSRF secret from DynamoDB:', error);
+      console.error('[STORAGE] Error getting CSRF secret from DynamoDB:', error);
       return null;
     }
   }
 
   async setCsrfSecret(sessionId: string, secret: string): Promise<void> {
+    console.log(`[STORAGE] Setting CSRF secret for session: ${sessionId}`);
+    console.log(`[STORAGE] Secret (first 10 chars): ${secret.substring(0, 10)}...`);
     try {
       await this.client.send(new PutCommand({
         TableName: this.tableName,
@@ -215,8 +220,9 @@ class DynamoStorage implements SessionStorage {
           ttl: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
         }
       }));
+      console.log(`[STORAGE] CSRF secret stored successfully`);
     } catch (error) {
-      console.error('Error setting CSRF secret in DynamoDB:', error);
+      console.error('[STORAGE] Error setting CSRF secret in DynamoDB:', error);
     }
   }
 
