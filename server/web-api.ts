@@ -88,6 +88,17 @@ if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
 // Initialize CSRF tokens
 const tokens = new Tokens();
 
+// Middleware (order matters!)
+app.use(express.json());
+app.use(cookieParser()); // MUST be before custom session middleware
+
+app.use(cors({
+  origin: process.env.AWS_LAMBDA_FUNCTION_NAME
+    ? true // In Lambda, rely on API Gateway CORS configuration
+    : ['http://localhost:4200', 'http://127.0.0.1:4200'], // Local development
+  credentials: true
+}));
+
 // Configure session storage
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key',
@@ -108,7 +119,7 @@ app.use((req, res, next) => {
   // In Lambda, use a custom session identifier that persists across requests
   if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
     // Get or create custom session ID from cookie
-    let customSessionId = req.cookies['custom-session-id'];
+    let customSessionId = req.cookies ? req.cookies['custom-session-id'] : undefined;
 
     if (!customSessionId) {
       // Generate a new custom session ID
@@ -136,16 +147,6 @@ app.use((req, res, next) => {
   console.log(`[SESSION] Custom Session ID: ${req.customSessionId || 'N/A'}`);
   next();
 });
-
-// Middleware
-app.use(cors({
-  origin: process.env.AWS_LAMBDA_FUNCTION_NAME
-    ? true // In Lambda, rely on API Gateway CORS configuration
-    : ['http://localhost:4200', 'http://127.0.0.1:4200'], // Local development
-  credentials: true
-}));
-app.use(express.json());
-app.use(cookieParser());
 
 
 const rateLimiter = rateLimit({
