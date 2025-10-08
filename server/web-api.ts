@@ -137,29 +137,25 @@ const csrfProtection = async (req: Request, res: Response, next: NextFunction) =
     return next();
   }
 
-  // Get or create CSRF secret using persistent storage
-  let csrfSecret = req.session.csrfSecret;
-  console.log(`[CSRF] CSRF secret from session: ${csrfSecret ? 'EXISTS' : 'MISSING'}`);
+  // In Lambda, always use persistent storage first, then session as fallback
+  let csrfSecret = null;
 
-  // For Lambda, also check persistent storage
-  if (!csrfSecret && req.sessionID) {
-    console.log(`[CSRF] Checking persistent storage for session ID: ${req.sessionID}`);
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME && req.sessionID) {
+    console.log(`[CSRF] Lambda mode: checking persistent storage for session ID: ${req.sessionID}`);
     csrfSecret = (await storage.getCsrfSecret(req.sessionID)) || undefined;
     console.log(`[CSRF] CSRF secret from storage: ${csrfSecret ? 'EXISTS' : 'MISSING'}`);
   }
 
-  // Create new secret if none exists
+  // Fall back to session if not in Lambda or not found in storage
   if (!csrfSecret) {
-    console.log(`[CSRF] Creating new CSRF secret`);
-    csrfSecret = tokens.secretSync();
-    req.session.csrfSecret = csrfSecret;
-    console.log(`[CSRF] Stored CSRF secret in session`);
+    csrfSecret = req.session.csrfSecret;
+    console.log(`[CSRF] CSRF secret from session: ${csrfSecret ? 'EXISTS' : 'MISSING'}`);
+  }
 
-    // Store in persistent storage for Lambda
-    if (req.sessionID) {
-      console.log(`[CSRF] Storing CSRF secret in persistent storage for session: ${req.sessionID}`);
-      await storage.setCsrfSecret(req.sessionID, csrfSecret);
-    }
+  // Error: no CSRF secret found anywhere
+  if (!csrfSecret) {
+    console.log(`[CSRF] ERROR: No CSRF secret found - user must call /api/auth/csrf-token first`);
+    return res.status(403).json({ error: 'No CSRF token available. Please refresh and try again.' });
   }
 
   const token = req.headers['x-csrf-token'] as string || req.body._csrf;
@@ -513,15 +509,19 @@ app.get('/api/auth/csrf-token', rateLimiter, async (req: Request, res: Response)
   console.log(`[CSRF-TOKEN] Session ID: ${req.sessionID}`);
   console.log(`[CSRF-TOKEN] Session data:`, JSON.stringify(req.session, null, 2));
 
-  // Get or create CSRF secret using persistent storage
-  let csrfSecret = req.session.csrfSecret;
-  console.log(`[CSRF-TOKEN] CSRF secret from session: ${csrfSecret ? 'EXISTS' : 'MISSING'}`);
+  // In Lambda, always check persistent storage first, then session as fallback
+  let csrfSecret = null;
 
-  // For Lambda, also check persistent storage
-  if (!csrfSecret && req.sessionID) {
-    console.log(`[CSRF-TOKEN] Checking persistent storage for session ID: ${req.sessionID}`);
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME && req.sessionID) {
+    console.log(`[CSRF-TOKEN] Lambda mode: checking persistent storage for session ID: ${req.sessionID}`);
     csrfSecret = (await storage.getCsrfSecret(req.sessionID)) || undefined;
     console.log(`[CSRF-TOKEN] CSRF secret from storage: ${csrfSecret ? 'EXISTS' : 'MISSING'}`);
+  }
+
+  // Fall back to session if not in Lambda or not found in storage
+  if (!csrfSecret) {
+    csrfSecret = req.session.csrfSecret;
+    console.log(`[CSRF-TOKEN] CSRF secret from session: ${csrfSecret ? 'EXISTS' : 'MISSING'}`);
   }
 
   // Create new secret if none exists
@@ -531,7 +531,7 @@ app.get('/api/auth/csrf-token', rateLimiter, async (req: Request, res: Response)
     req.session.csrfSecret = csrfSecret;
     console.log(`[CSRF-TOKEN] Stored CSRF secret in session`);
 
-    // Store in persistent storage for Lambda
+    // Always store in persistent storage for Lambda
     if (req.sessionID) {
       console.log(`[CSRF-TOKEN] Storing CSRF secret in persistent storage for session: ${req.sessionID}`);
       await storage.setCsrfSecret(req.sessionID, csrfSecret);
