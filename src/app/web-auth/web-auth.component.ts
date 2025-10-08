@@ -30,18 +30,22 @@ export type AuthEvent = {
 })
 export class WebAuthComponent implements OnInit {
   @Output() authEvent = new EventEmitter<AuthEvent>();
-  
+
   isLoading = false;
   isAuthenticated = false;
   username = '';
   errorMessage = '';
   private csrfToken = '';
+  private sessionId = '';
 
   private http = inject(HttpClient);
 
   constructor(private snackBar: MatSnackBar) { }
 
   ngOnInit(): void {
+    // Initialize session ID
+    this.initializeSessionId();
+
     // Check if we're handling an OAuth callback
     const queryParams = new URLSearchParams(window.location.search);
     if (queryParams.has('success')) {
@@ -55,6 +59,41 @@ export class WebAuthComponent implements OnInit {
     }
   }
 
+  private initializeSessionId(): void {
+    // Try to get existing session ID from localStorage
+    this.sessionId = localStorage.getItem('custom-session-id') || '';
+
+    if (!this.sessionId) {
+      // Generate a new session ID
+      this.sessionId = this.generateSessionId();
+      localStorage.setItem('custom-session-id', this.sessionId);
+      console.log('Generated new session ID:', this.sessionId);
+    } else {
+      console.log('Using existing session ID:', this.sessionId);
+    }
+  }
+
+  private generateSessionId(): string {
+    // Generate a random session ID similar to what the server was doing
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  private getRequestHeaders(): { [key: string]: string } {
+    const headers: { [key: string]: string } = {};
+
+    if (this.csrfToken) {
+      headers['x-csrf-token'] = this.csrfToken;
+    }
+
+    if (this.sessionId) {
+      headers['x-session-id'] = this.sessionId;
+    }
+
+    return headers;
+  }
+
   private async fetchCsrfToken(): Promise<string> {
     try {
       interface CsrfTokenResponse {
@@ -63,6 +102,7 @@ export class WebAuthComponent implements OnInit {
 
       const apiUrl = environment.webApiUrl || '/api';
       const data = await this.http.get<CsrfTokenResponse>(`${apiUrl}/auth/csrf-token`, {
+        headers: this.getRequestHeaders(),
         withCredentials: true
       }).toPromise();
 
@@ -91,9 +131,7 @@ export class WebAuthComponent implements OnInit {
       }
 
       const result = await this.http.post<AuthResponse>(`${apiUrl}/auth/web-login`, {}, {
-        headers: {
-          'x-csrf-token': this.csrfToken
-        },
+        headers: this.getRequestHeaders(),
         withCredentials: true
       }).toPromise();
       
@@ -123,6 +161,7 @@ export class WebAuthComponent implements OnInit {
     try {
       const apiUrl = environment.webApiUrl || '/api';
       const status = await this.http.get<any>(`${apiUrl}/auth/login-status`, {
+        headers: this.getRequestHeaders(),
         withCredentials: true
       }).toPromise();
       
@@ -167,9 +206,7 @@ export class WebAuthComponent implements OnInit {
       
       const apiUrl = environment.webApiUrl || '/api';
       await this.http.post(`${apiUrl}/auth/logout`, {}, {
-        headers: {
-          'x-csrf-token': this.csrfToken
-        },
+        headers: this.getRequestHeaders(),
         withCredentials: true
       }).toPromise();
       

@@ -116,35 +116,21 @@ app.use((req, res, next) => {
   console.log(`[SESSION] ${req.method} ${req.path}`);
   console.log(`[SESSION] Express Session ID: ${req.sessionID}`);
 
-  // In Lambda, use a custom session identifier that persists across requests
+  // In Lambda, use a custom session identifier from client headers
   if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    console.log(`[SESSION] Lambda mode - checking for cookies`);
-    console.log(`[SESSION] req.cookies:`, req.cookies);
-    console.log(`[SESSION] All headers:`, JSON.stringify(req.headers));
+    console.log(`[SESSION] Lambda mode - checking for session ID header`);
+    console.log(`[SESSION] x-session-id header:`, req.headers['x-session-id']);
 
-    // Get or create custom session ID from cookie
-    let customSessionId = req.cookies ? req.cookies['custom-session-id'] : undefined;
-    console.log(`[SESSION] Custom session ID from cookie: ${customSessionId || 'NOT_FOUND'}`);
+    // Get custom session ID from header (sent by Angular app)
+    const customSessionId = req.headers['x-session-id'] as string;
+    console.log(`[SESSION] Custom session ID from header: ${customSessionId || 'NOT_FOUND'}`);
 
-    if (!customSessionId) {
-      // Generate a new custom session ID
-      customSessionId = crypto.randomBytes(32).toString('hex');
-      console.log(`[SESSION] Created new custom session ID: ${customSessionId}`);
-
-      // Set cookie that will persist across requests
-      res.cookie('custom-session-id', customSessionId, {
-        httpOnly: true,
-        secure: false, // Set to true in production with HTTPS
-        sameSite: 'lax',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-      });
-      console.log(`[SESSION] Set cookie for custom session ID`);
+    if (customSessionId) {
+      console.log(`[SESSION] Using custom session ID from client: ${customSessionId}`);
+      req.customSessionId = customSessionId;
     } else {
-      console.log(`[SESSION] Using existing custom session ID: ${customSessionId}`);
+      console.log(`[SESSION] WARNING: No session ID provided by client`);
     }
-
-    // Store custom session ID on request for use by other middleware
-    req.customSessionId = customSessionId;
   }
 
   console.log(`[SESSION] Session exists: ${req.session ? 'YES' : 'NO'}`);
