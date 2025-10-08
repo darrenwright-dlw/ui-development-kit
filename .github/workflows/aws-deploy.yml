@@ -195,7 +195,7 @@ jobs:
 
           aws apigatewayv2 update-api \
             --api-id $API_GATEWAY_ID \
-            --cors-configuration AllowOrigins='["'$CLOUDFRONT_URL'","https://developer.sailpoint.com"]',AllowMethods='["OPTIONS","GET","POST","PUT","PATCH","DELETE"]',AllowHeaders='["Content-Type","Authorization","x-csrf-token"]',AllowCredentials=true
+            --cors-configuration AllowOrigins='["'$CLOUDFRONT_URL'"]',AllowMethods='["OPTIONS","GET","POST","PUT","PATCH","DELETE"]',AllowHeaders='["Content-Type","Authorization","x-csrf-token"]'
 
           echo "✅ CORS policy updated successfully"
 
