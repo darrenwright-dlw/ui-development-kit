@@ -225,14 +225,21 @@ jobs:
 
           # Update only the dynamic environment variables that need the actual deployed URLs
           echo "Updating Lambda environment variables with dynamic URLs..."
+          echo "API_URL: $API_URL"
+          echo "CLOUDFRONT_URL: $CLOUDFRONT_URL"
 
           # Get current environment variables to preserve existing values
+          echo "Getting current Lambda environment variables..."
           CURRENT_ENV=$(aws lambda get-function-configuration \
             --function-name $LAMBDA_FUNCTION_NAME \
             --query "Environment.Variables" \
             --output json)
 
+          echo "Current environment variables:"
+          echo "$CURRENT_ENV"
+
           # Update only the dynamic URLs while preserving all other environment variables
+          echo "Building new environment variables..."
           echo "$CURRENT_ENV" | jq \
             --arg redirect_uri "$API_URL/oauth/callback" \
             --arg website_url "$CLOUDFRONT_URL" \
@@ -241,8 +248,14 @@ jobs:
               WEBSITE_URL: $website_url
             }' > /tmp/lambda-env.json
 
+          echo "New environment variables (without Variables wrapper):"
+          cat /tmp/lambda-env.json
+
           # Create the proper structure for AWS Lambda
           jq '{Variables: .}' /tmp/lambda-env.json > /tmp/lambda-env-final.json
+
+          echo "Final environment variables (with Variables wrapper):"
+          cat /tmp/lambda-env-final.json
 
           aws lambda update-function-configuration \
             --function-name $LAMBDA_FUNCTION_NAME \
