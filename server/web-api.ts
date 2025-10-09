@@ -75,6 +75,13 @@ if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
 
   // Strip stage name from paths in Lambda environment
   app.use((req, res, next) => {
+    // Ensure response object has EventEmitter methods for Lambda compatibility
+    if (!res.on || typeof res.on !== 'function') {
+      const EventEmitter = require('events');
+      Object.setPrototypeOf(res, EventEmitter.prototype);
+      EventEmitter.call(res);
+    }
+
     // Remove stage name (like /prod, /dev, /stage) from the beginning of the path
     req.url = req.url.replace(/^\/[^\/]+/, '');
     // Ensure we don't end up with an empty path
