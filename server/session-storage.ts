@@ -214,7 +214,6 @@ class DynamoStorage implements SessionStorage {
   }
 
   async getCsrfSecret(sessionId: string): Promise<string | null> {
-    console.log(`[STORAGE] Getting CSRF secret for session: ${sessionId}`);
     try {
       const result = await this.client.send(new GetCommand({
         TableName: this.tableName,
@@ -222,17 +221,13 @@ class DynamoStorage implements SessionStorage {
       }));
 
       const secret = result.Item?.secret || null;
-      console.log(`[STORAGE] CSRF secret retrieved: ${secret ? 'EXISTS' : 'NOT_FOUND'}`);
       return secret;
     } catch (error) {
-      console.error('[STORAGE] Error getting CSRF secret from DynamoDB:', error);
       return null;
     }
   }
 
   async setCsrfSecret(sessionId: string, secret: string): Promise<void> {
-    console.log(`[STORAGE] Setting CSRF secret for session: ${sessionId}`);
-    console.log(`[STORAGE] Secret (first 10 chars): ${secret.substring(0, 10)}...`);
     try {
       await this.client.send(new PutCommand({
         TableName: this.tableName,
@@ -243,7 +238,7 @@ class DynamoStorage implements SessionStorage {
           ttl: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
         }
       }));
-      console.log(`[STORAGE] CSRF secret stored successfully`);
+
     } catch (error) {
       console.error('[STORAGE] Error setting CSRF secret in DynamoDB:', error);
     }
@@ -311,13 +306,11 @@ class DynamoStorage implements SessionStorage {
 // Storage factory
 export const createStorage = (): SessionStorage => {
   if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    console.log('Using DynamoDB storage for Lambda environment');
     return new DynamoStorage(
       process.env.AWS_REGION,
       process.env.DYNAMO_TABLE_NAME
     );
   } else {
-    console.log('Using memory storage for local development');
     return new MemoryStorage();
   }
 };

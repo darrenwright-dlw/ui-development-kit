@@ -6,15 +6,12 @@ import express, { Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import axios from 'axios';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import Tokens = require("csrf")
 import rateLimit from 'express-rate-limit';
-import { createStorage, SessionAuth } from './session-storage';
+import { createStorage } from './session-storage';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -25,22 +22,6 @@ interface TokenData {
   accessExpiry: Date;
   refreshToken?: string;
   refreshExpiry?: Date;
-}
-
-interface TokenDetails {
-  tenant_id: string;
-  pod: string;
-  org: string;
-  identity_id: string;
-  user_name: string;
-  strong_auth: boolean;
-  authorities: string[];
-  client_id: string;
-  strong_auth_supported: boolean;
-  scope: string[];
-  exp: number;
-  jti: string;
-  expiry: Date;
 }
 
 interface OAuthState {
@@ -121,30 +102,14 @@ app.use(session({
 
 // Add session logging middleware and custom session ID for Lambda
 app.use((req, res, next) => {
-  console.log(`[SESSION] ${req.method} ${req.path}`);
-  console.log(`[SESSION] Express Session ID: ${req.sessionID}`);
-
   // In Lambda, use a custom session identifier from client headers
   if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    console.log(`[SESSION] Lambda mode - checking for session ID header`);
-    console.log(`[SESSION] x-session-id header:`, req.headers['x-session-id']);
-
     // Get custom session ID from header (sent by Angular app)
     const customSessionId = req.headers['x-session-id'] as string;
-    console.log(`[SESSION] Custom session ID from header: ${customSessionId || 'NOT_FOUND'}`);
-
     if (customSessionId) {
-      console.log(`[SESSION] Using custom session ID from client: ${customSessionId}`);
       req.customSessionId = customSessionId;
-    } else {
-      console.log(`[SESSION] WARNING: No session ID provided by client`);
     }
   }
-
-  console.log(`[SESSION] Session exists: ${req.session ? 'YES' : 'NO'}`);
-  console.log(`[SESSION] Session authenticated: ${req.session?.isAuthenticated || false}`);
-  console.log(`[SESSION] CSRF secret in session: ${req.session?.csrfSecret ? 'EXISTS' : 'MISSING'}`);
-  console.log(`[SESSION] Custom Session ID: ${req.customSessionId || 'N/A'}`);
   next();
 });
 
@@ -155,64 +120,42 @@ const rateLimiter = rateLimit({
   message: { error: 'Too many request attempts. Please try again later.' },
   // In Lambda/API Gateway, trust the proxy and validate properly
   validate: process.env.AWS_LAMBDA_FUNCTION_NAME ? {
-    trustProxy: false, // Disable the trust proxy validation in Lambda
-    xForwardedForHeader: false // Disable X-Forwarded-For validation
+    trustProxy: false,
+    xForwardedForHeader: false 
   } : undefined
 });
 
 // CSRF middleware
 const csrfProtection = async (req: Request, res: Response, next: NextFunction) => {
-  console.log(`[CSRF] Processing ${req.method} ${req.path}`);
-  console.log(`[CSRF] Express Session ID: ${req.sessionID}`);
-  console.log(`[CSRF] Custom Session ID: ${req.customSessionId}`);
-  console.log(`[CSRF] Session data:`, JSON.stringify(req.session, null, 2));
 
   // Skip CSRF for GET requests and OAuth callback
   if (req.method === 'GET' || req.path === '/api/oauth/callback') {
-    console.log(`[CSRF] Skipping CSRF for ${req.method} ${req.path}`);
     return next();
   }
 
   // In Lambda, use custom session ID; otherwise use express session ID
   const sessionIdToUse = process.env.AWS_LAMBDA_FUNCTION_NAME ? req.customSessionId : req.sessionID;
-  console.log(`[CSRF] Using session ID: ${sessionIdToUse}`);
-
   // In Lambda, always use persistent storage first, then session as fallback
   let csrfSecret = null;
 
   if (process.env.AWS_LAMBDA_FUNCTION_NAME && sessionIdToUse) {
-    console.log(`[CSRF] Lambda mode: checking persistent storage for session ID: ${sessionIdToUse}`);
     csrfSecret = (await storage.getCsrfSecret(sessionIdToUse)) || undefined;
-    console.log(`[CSRF] CSRF secret from storage: ${csrfSecret ? 'EXISTS' : 'MISSING'}`);
   }
 
   // Fall back to session if not in Lambda or not found in storage
   if (!csrfSecret) {
     csrfSecret = req.session.csrfSecret;
-    console.log(`[CSRF] CSRF secret from session: ${csrfSecret ? 'EXISTS' : 'MISSING'}`);
   }
 
   // Error: no CSRF secret found anywhere
   if (!csrfSecret) {
-    console.log(`[CSRF] ERROR: No CSRF secret found - user must call /api/auth/csrf-token first`);
     return res.status(403).json({ error: 'No CSRF token available. Please refresh and try again.' });
   }
 
   const token = req.headers['x-csrf-token'] as string || req.body._csrf;
-  console.log(`[CSRF] Received token: ${token ? 'EXISTS' : 'MISSING'}`);
-  console.log(`[CSRF] Token value (first 10 chars): ${token ? token.substring(0, 10) + '...' : 'N/A'}`);
-
   if (!token || !tokens.verify(csrfSecret, token)) {
-    console.log(`[CSRF] Token verification failed`);
-    console.log(`[CSRF] Token exists: ${!!token}`);
-    console.log(`[CSRF] Secret exists: ${!!csrfSecret}`);
-    if (token && csrfSecret) {
-      console.log(`[CSRF] Verification result: ${tokens.verify(csrfSecret, token)}`);
-    }
     return res.status(403).json({ error: 'Invalid CSRF token' });
   }
-
-  console.log(`[CSRF] Token verification successful`);
   next();
 };
 
@@ -222,9 +165,8 @@ const SERVER_CONFIG = {
   tenantUrl: process.env.TENANT_URL || 'http://localhost:3000',
   // Your SailPoint API URL
   apiUrl: process.env.API_URL || 'http://localhost:3000',
-  // OAuth client ID (registered with SailPoint)
+  // OAuth client ID and Secret (registered with SailPoint)
   clientId: process.env.CLIENT_ID || '',
-  // Client secret (should be securely stored in production)
   clientSecret: process.env.CLIENT_SECRET || '',
   // Redirect URI registered with the client
   redirectUri: process.env.REDIRECT_URI || 'http://localhost:3000/api/oauth/callback',
@@ -232,7 +174,7 @@ const SERVER_CONFIG = {
   scopes: process.env.OAUTH_SCOPES || 'sp:scopes:all'
 };
 
-// Initialize storage (DynamoDB for Lambda, memory for local)
+// Initialize storage
 const storage = createStorage();
 
 // In-memory token storage for session-based approach
@@ -277,10 +219,9 @@ function parseJWT(token: string): any {
   }
 }
 
-// Simplified authentication endpoint
+// authentication endpoint
 app.post('/api/auth/web-login', rateLimiter, csrfProtection, async (req: Request, res: Response) => {
-  console.log('POST /api/auth/web-login called');
-  
+
   // Generate and store state parameter
   const clientSessionId = process.env.AWS_LAMBDA_FUNCTION_NAME ? req.customSessionId : req.sessionID;
   const stateData: OAuthState = {
@@ -298,8 +239,6 @@ app.post('/api/auth/web-login', rateLimiter, csrfProtection, async (req: Request
   // Build the OAuth URL using the SailPoint login domain
   const loginBaseUrl = buildSailPointUrl(SERVER_CONFIG.tenantUrl, 'login');
   const authUrl = `${loginBaseUrl}/oauth/authorize?client_id=${SERVER_CONFIG.clientId}&response_type=code&redirect_uri=${encodeURIComponent(SERVER_CONFIG.redirectUri)}&scope=${encodeURIComponent(SERVER_CONFIG.scopes)}&state=${encodeURIComponent(state)}`;
-  
-  console.log('Generated auth URL:', authUrl);
   
   res.json({ 
     success: true, 
@@ -343,10 +282,9 @@ app.get('/api/oauth/callback', rateLimiter, async (req: Request, res: Response) 
     
     try {
       // Attempt to make a real token exchange
-      console.log('Attempting token exchange with SailPoint');
+
       const apiBaseUrl = buildSailPointUrl(SERVER_CONFIG.tenantUrl, 'api');
       const tokenEndpoint = `${apiBaseUrl}/oauth/token`;
-      console.log('Token endpoint:', tokenEndpoint);
       
       // Using form-urlencoded format as required by OAuth2 spec
       const params = new URLSearchParams();
@@ -376,11 +314,6 @@ app.get('/api/oauth/callback', rateLimiter, async (req: Request, res: Response) 
       const sessionIdToUse = (process.env.AWS_LAMBDA_FUNCTION_NAME && stateData.clientSessionId)
         ? stateData.clientSessionId
         : req.sessionID;
-
-      console.log(`[OAUTH-CALLBACK] Using session ID for storage: ${sessionIdToUse}`);
-      console.log(`[OAUTH-CALLBACK] State client session ID: ${stateData.clientSessionId}`);
-      console.log(`[OAUTH-CALLBACK] Express session ID: ${req.sessionID}`);
-
       if (sessionIdToUse) {
         await storage.setTokenData(sessionIdToUse, tokenData);
       }
@@ -399,7 +332,6 @@ app.get('/api/oauth/callback', rateLimiter, async (req: Request, res: Response) 
           isAuthenticated: true,
           username: username
         });
-        console.log(`[OAUTH-CALLBACK] Stored auth data for session: ${sessionIdToUse}`);
       }
       
     } catch (tokenError) {
@@ -418,8 +350,6 @@ app.get('/api/oauth/callback', rateLimiter, async (req: Request, res: Response) 
         ? stateData.clientSessionId
         : req.sessionID;
 
-      console.log(`[OAUTH-CALLBACK-MOCK] Using session ID for storage: ${sessionIdToUse}`);
-
       if (sessionIdToUse) {
         await storage.setTokenData(sessionIdToUse, tokenData);
       }
@@ -434,7 +364,6 @@ app.get('/api/oauth/callback', rateLimiter, async (req: Request, res: Response) 
           isAuthenticated: true,
           username: 'Test User'
         });
-        console.log(`[OAUTH-CALLBACK-MOCK] Stored auth data for session: ${sessionIdToUse}`);
       }
     }
     
@@ -444,9 +373,6 @@ app.get('/api/oauth/callback', rateLimiter, async (req: Request, res: Response) 
     if (state) {
       await storage.deleteOAuthState(state as string);
     }
-    
-    // Redirect to success URL
-    console.log('Authentication successful, redirecting to Angular app');
     
     // Redirect to success URL using the configured website URL
     const websiteUrl = process.env.WEBSITE_URL || 'http://localhost:4200';
@@ -460,7 +386,6 @@ app.get('/api/oauth/callback', rateLimiter, async (req: Request, res: Response) 
 
 // Check login status
 app.get('/api/auth/login-status', rateLimiter, async (req: Request, res: Response) => {
-  console.log('GET /api/auth/login-status called');
 
   // Check session first, then persistent storage for Lambda
   let isAuthenticated: boolean = req.session.isAuthenticated === true;
@@ -468,22 +393,16 @@ app.get('/api/auth/login-status', rateLimiter, async (req: Request, res: Respons
 
   // In Lambda, check persistent storage if session is not authenticated
   if (!isAuthenticated && process.env.AWS_LAMBDA_FUNCTION_NAME && req.customSessionId) {
-    console.log(`[LOGIN-STATUS] Checking persistent storage for session: ${req.customSessionId}`);
     const authData = await storage.getSessionAuth(req.customSessionId);
     if (authData) {
-      console.log(`[LOGIN-STATUS] Found auth data in storage: ${JSON.stringify(authData)}`);
       isAuthenticated = authData.isAuthenticated;
       username = authData.username;
 
       // Update Express session with persistent data
       req.session.isAuthenticated = authData.isAuthenticated;
       req.session.username = authData.username;
-    } else {
-      console.log(`[LOGIN-STATUS] No auth data found in storage`);
     }
   }
-
-  console.log(`[LOGIN-STATUS] Final auth state: isAuthenticated=${isAuthenticated}, username=${username}`);
 
   // Return current authentication status
   res.json({
@@ -494,7 +413,6 @@ app.get('/api/auth/login-status', rateLimiter, async (req: Request, res: Respons
 
 // Check access token status and auto-refresh if needed
 app.get('/api/auth/status/access/', rateLimiter, async (req: Request, res: Response) => {
-  console.log('GET /api/auth/status/access/ called');
 
   // Check if user is authenticated (session first, then persistent storage for Lambda)
   let isAuthenticated: boolean = req.session.isAuthenticated === true;
@@ -597,7 +515,6 @@ app.get('/api/auth/status/access/', rateLimiter, async (req: Request, res: Respo
 
 // Logout endpoint
 app.post('/api/auth/logout', rateLimiter, csrfProtection, async (req: Request, res: Response) => {
-  console.log('POST /api/auth/logout called');
 
   // Clear session
   req.session.isAuthenticated = false;
@@ -618,54 +535,40 @@ app.post('/api/auth/logout', rateLimiter, csrfProtection, async (req: Request, r
 
 // CSRF token endpoint
 app.get('/api/auth/csrf-token', rateLimiter, async (req: Request, res: Response) => {
-  console.log('[CSRF-TOKEN] GET /api/auth/csrf-token called');
-  console.log(`[CSRF-TOKEN] Express Session ID: ${req.sessionID}`);
-  console.log(`[CSRF-TOKEN] Custom Session ID: ${req.customSessionId}`);
-  console.log(`[CSRF-TOKEN] Session data:`, JSON.stringify(req.session, null, 2));
 
   // In Lambda, use custom session ID; otherwise use express session ID
   const sessionIdToUse = process.env.AWS_LAMBDA_FUNCTION_NAME ? req.customSessionId : req.sessionID;
-  console.log(`[CSRF-TOKEN] Using session ID: ${sessionIdToUse}`);
 
   // In Lambda, always check persistent storage first, then session as fallback
   let csrfSecret = null;
 
   if (process.env.AWS_LAMBDA_FUNCTION_NAME && sessionIdToUse) {
-    console.log(`[CSRF-TOKEN] Lambda mode: checking persistent storage for session ID: ${sessionIdToUse}`);
     csrfSecret = (await storage.getCsrfSecret(sessionIdToUse)) || undefined;
-    console.log(`[CSRF-TOKEN] CSRF secret from storage: ${csrfSecret ? 'EXISTS' : 'MISSING'}`);
   }
 
   // Fall back to session if not in Lambda or not found in storage
   if (!csrfSecret) {
     csrfSecret = req.session.csrfSecret;
-    console.log(`[CSRF-TOKEN] CSRF secret from session: ${csrfSecret ? 'EXISTS' : 'MISSING'}`);
   }
 
   // Create new secret if none exists
   if (!csrfSecret) {
-    console.log(`[CSRF-TOKEN] Creating new CSRF secret`);
     csrfSecret = tokens.secretSync();
     req.session.csrfSecret = csrfSecret;
-    console.log(`[CSRF-TOKEN] Stored CSRF secret in session`);
 
     // Always store in persistent storage for Lambda
     if (sessionIdToUse) {
-      console.log(`[CSRF-TOKEN] Storing CSRF secret in persistent storage for session: ${sessionIdToUse}`);
       await storage.setCsrfSecret(sessionIdToUse, csrfSecret);
     }
   }
 
   // Generate CSRF token
   const csrfToken = tokens.create(csrfSecret);
-  console.log(`[CSRF-TOKEN] Generated token (first 10 chars): ${csrfToken.substring(0, 10)}...`);
-
   res.json({ csrfToken });
 });
 
 // SDK API proxy endpoint
 app.post('/api/sdk/:methodName', rateLimiter, csrfProtection, async (req: Request, res: Response) => {
-  console.log('POST /api/sdk called', req.params);
   const { methodName } = req.params;
   const { args } = req.body;
 
@@ -688,58 +591,44 @@ app.post('/api/sdk/:methodName', rateLimiter, csrfProtection, async (req: Reques
 
   // Try to get token data from memory first, then persistent storage
   const sessionIdToUse = process.env.AWS_LAMBDA_FUNCTION_NAME ? req.customSessionId : req.sessionID;
-  console.log(`[SDK-PROXY] Using session ID for token lookup: ${sessionIdToUse}`);
-  console.log(`[SDK-PROXY] Global tokenData exists: ${!!tokenData}`);
-
   let currentTokenData = tokenData;
   if (!currentTokenData && sessionIdToUse) {
-    console.log(`[SDK-PROXY] Fetching token data from storage for session: ${sessionIdToUse}`);
     currentTokenData = await storage.getTokenData(sessionIdToUse);
-    console.log(`[SDK-PROXY] Token data retrieved from storage: ${!!currentTokenData}`);
     if (currentTokenData) {
       tokenData = currentTokenData; // Update global for local development
     }
   }
 
   if (!currentTokenData) {
-    console.log(`[SDK-PROXY] No token data found for session: ${sessionIdToUse}`);
     return res.status(401).json({ error: 'No token data found' });
   }
 
-  // Check if access token is valid
   const now = new Date();
   if (currentTokenData.accessExpiry <= now) {
-    console.log(`[SDK-PROXY] Access token expired for session: ${sessionIdToUse}`);
     return res.status(401).json({ error: 'Access token expired' });
   }
 
   try {
-    // Import the generated SDK wrapper
     const { executeSdkMethod } = require('./sailpoint-sdk-web');
     
-    // Build API base path using helper function
+    // Build API base path
     let basePath = '';
     try {
       basePath = buildSailPointUrl(SERVER_CONFIG.tenantUrl, 'api');
     } catch (error) {
       console.error('Failed to construct API base path:', error);
-      return res.status(500).json({ error: 'Failed to determine API base path' });
     }
 
     // Execute the SDK method
-    console.log(`[SDK-PROXY] Executing SDK method: ${methodName} with token for session: ${sessionIdToUse}`);
     const result = await executeSdkMethod(
       methodName,
       args || {},
       currentTokenData.accessToken,
       basePath
     );
-    console.log(`[SDK-PROXY] SDK method ${methodName} executed successfully`);
-    
-    // Send the full result (includes data, headers, status, etc.)
+
     res.json(result);
   } catch (error) {
-    console.error('SDK method execution error:', error);
     res.status(500).json({ 
       error: 'SDK method execution failed',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -747,9 +636,8 @@ app.post('/api/sdk/:methodName', rateLimiter, csrfProtection, async (req: Reques
   }
 });
 
-// Config endpoints
+// Config endpoint
 app.get('/api/config', rateLimiter, (req: Request, res: Response) => {
-  console.log('GET /api/config called');
   res.json({
     version: '1.0.0',
     settings: {
@@ -768,12 +656,4 @@ if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Web API server running on port ${PORT}`);
     console.log(`OAuth client configured for: ${SERVER_CONFIG.tenantUrl}`);
-    console.log('Available endpoints:');
-    console.log('  POST /api/auth/web-login (CSRF protected)');
-    console.log('  GET  /api/oauth/callback');
-    console.log('  GET  /api/auth/login-status');
-    console.log('  GET  /api/auth/status/access/');
-    console.log('  GET  /api/auth/csrf-token');
-  console.log('  POST /api/auth/logout (CSRF protected)');
-  console.log('  POST /api/sdk/:methodName (CSRF protected)');
 })};
