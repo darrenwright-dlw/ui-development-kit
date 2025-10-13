@@ -6,6 +6,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 
 // Import middleware
 import { csrfProtection, sessionIdMiddleware } from './middleware/auth.middleware';
@@ -82,6 +83,37 @@ app.post('/api/sdk/:methodName', rateLimiter, csrfProtection, sdkController.sdkP
 
 // Config routes
 app.get('/api/config', rateLimiter, configController.getConfig);
+
+// Serve static files from Angular build (for Docker/production deployment)
+// Only serve static files if not in Lambda environment
+if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  const staticPath = path.join(__dirname, '../public');
+  
+  // Serve static assets
+  app.use(express.static(staticPath, {
+    maxAge: '1y',
+    etag: true,
+    setHeaders: (res, filePath) => {
+      // Cache static assets aggressively
+      if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      // Don't cache HTML files
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    }
+  }));
+
+  // Serve index.html for any other routes (Angular routing)
+  app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.url.startsWith('/api')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(path.join(staticPath, 'index.html'));
+  });
+}
 
 // Export app for Lambda or other environments
 export default app;

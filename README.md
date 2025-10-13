@@ -40,6 +40,8 @@
   - [Local Development](#local-development)
 - [Building the SailPoint SDK](#building-the-sailpoint-sdk)
 - [Building the Application](#building-the-application)
+  - [Docker Deployment](#docker-deployment)
+  - [Deploying to AWS with GitHub Actions](#deploying-to-aws-with-github-actions)
 - [Usage](#usage)
   - [Environment Configuration](#environment-configuration)
   - [Authentication Methods](#authentication-methods)
@@ -271,7 +273,110 @@ For web deployment (without Electron):
 npm run web:build
 ```
 
-### Deploying the app
+For Docker deployment (without Electron TypeScript):
+```bash
+npm run docker:build
+```
+
+### Docker Deployment
+
+The application can be deployed using Docker to any container hosting service (AWS ECS, Azure Container Instances, Google Cloud Run, DigitalOcean, Railway, Render, etc.).
+
+#### Building the Docker Image
+
+Build the Docker image:
+```bash
+docker build -t sailpoint-ui-dev-kit .
+```
+
+#### Running with Docker Compose (Recommended)
+
+1. **Create environment file**:
+   ```bash
+   # Copy the example file
+   cp .env.example .env
+   
+   # Edit .env and fill in your SailPoint credentials
+   # Get OAuth credentials from: Global -> Security Settings -> API Management
+   ```
+
+2. **Start the application**:
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **View logs**:
+   ```bash
+   docker-compose logs -f
+   ```
+
+4. **Stop the application**:
+   ```bash
+   docker-compose down
+   ```
+
+The application will be available at `http://localhost:3000`
+
+#### Running with Docker CLI
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -e JWT_SECRET="your-jwt-secret" \
+  -e SESSION_SECRET="your-session-secret" \
+  -e TENANT_URL="https://your-org.identitynow.com/" \
+  -e CLIENT_ID="your-client-id" \
+  -e CLIENT_SECRET="your-client-secret" \
+  -e REDIRECT_URI="http://localhost:3000/api/oauth/callback" \
+  -e OAUTH_SCOPES="sp:scopes:all" \
+  --name sailpoint-ui-dev-kit \
+  sailpoint-ui-dev-kit
+```
+
+#### Environment Variables
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `PORT` | Server port | No | `3000` |
+| `NODE_ENV` | Environment mode | No | `production` |
+| `JWT_SECRET` | JWT signing secret | Yes | - |
+| `SESSION_SECRET` | Session encryption secret | Yes | - |
+| `TENANT_URL` | SailPoint tenant URL | Yes | - |
+| `CLIENT_ID` | OAuth client ID | Yes | - |
+| `CLIENT_SECRET` | OAuth client secret | Yes | - |
+| `REDIRECT_URI` | OAuth redirect URI | Yes | - |
+| `OAUTH_SCOPES` | OAuth scopes | No | `sp:scopes:all` |
+| `WEBSITE_URL` | Website URL for CORS | No | `http://localhost:3000` |
+
+#### Deploying to Cloud Services
+
+**AWS ECS/Fargate**:
+```bash
+# Push to ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-east-1.amazonaws.com
+docker tag sailpoint-ui-dev-kit:latest <account-id>.dkr.ecr.us-east-1.amazonaws.com/sailpoint-ui-dev-kit:latest
+docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/sailpoint-ui-dev-kit:latest
+```
+
+**Google Cloud Run**:
+```bash
+# Push to GCR
+gcloud builds submit --tag gcr.io/<project-id>/sailpoint-ui-dev-kit
+gcloud run deploy sailpoint-ui-dev-kit --image gcr.io/<project-id>/sailpoint-ui-dev-kit --platform managed
+```
+
+**Azure Container Instances**:
+```bash
+# Push to ACR
+az acr login --name <registry-name>
+docker tag sailpoint-ui-dev-kit <registry-name>.azurecr.io/sailpoint-ui-dev-kit
+docker push <registry-name>.azurecr.io/sailpoint-ui-dev-kit
+az container create --resource-group <group> --name sailpoint-ui-dev-kit --image <registry-name>.azurecr.io/sailpoint-ui-dev-kit
+```
+
+**Railway/Render**: Connect your Git repository and they will automatically detect and build the Dockerfile.
+
+### Deploying to AWS with GitHub Actions
 
 The application can be deployed to AWS using the included GitHub Actions workflow (`.github/workflows/aws-deploy.yml`). The workflow automatically deploys both the Angular frontend and Node.js backend to AWS infrastructure.
 
