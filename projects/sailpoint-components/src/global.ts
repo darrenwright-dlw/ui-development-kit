@@ -1,5 +1,5 @@
 
-export type AuthMethods = 'oauth' | 'pat';
+export type AuthMethods = "oauth" | "pat";
 
 export type UpdateEnvironmentRequest = {
   environmentName: string;
@@ -8,8 +8,7 @@ export type UpdateEnvironmentRequest = {
   authtype: AuthMethods;
   clientId?: string;
   clientSecret?: string;
-  openAIApiKey?: string;
-};
+}
 
 export type Tenant = {
   active: boolean;
@@ -18,31 +17,30 @@ export type Tenant = {
   tenantUrl: string;
   clientId?: string;
   clientSecret?: string;
-  openAIApiKey?: string;
   authtype: AuthMethods;
   tenantName: string;
-};
+}
 
 export type TokenSet = {
   accessToken: string;
   accessExpiry: Date;
   refreshToken: string;
   refreshExpiry: Date;
-};
+}
 
 export type AccessTokenStatus = {
   authtype: AuthMethods;
   accessTokenIsValid: boolean;
   expiry?: Date;
   needsRefresh: boolean;
-};
+}
 
 export type RefreshTokenStatus = {
   authtype: "oauth";
   refreshTokenIsValid: boolean;
   expiry?: Date;
   needsRefresh: boolean;
-};
+}
 
 export type AuthPayload = {
   tenant_id: string;
@@ -82,18 +80,11 @@ declare global {
       updateEnvironment: (config: UpdateEnvironmentRequest) => Promise<{ success: boolean, error?: string }>;
       deleteEnvironment: (environment: string) => Promise<{ success: boolean, error?: string }>;
       setActiveEnvironment: (environment: string) => Promise<{ success: boolean, error?: string }>;
+      
       // Config file management
       readConfig: () => Promise<any>;
       writeConfig: (config: any) => Promise<any>;
-
-      // Logo file management
-      writeLogo: (
-        buffer: Uint8Array<ArrayBufferLike>,
-        fileName: string
-      ) => Promise<any>;
-      checkLogoExists: (fileName: string) => Promise<any>;
-      getUserDataPath: () => Promise<any>;
-      getLogoDataUrl: (fileName: string) => Promise<any>;
+    
     };
   }
 }

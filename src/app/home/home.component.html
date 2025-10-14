@@ -2,7 +2,7 @@
 <div *ngIf="!state.isConnected && !state.loading" class="home-container">
   <!-- Welcome Section -->
   <div class="welcome-section">
-    <h1>Welcome to the SailPoint Navigate 2025 Hackathon: Custom Certificate Management UI</h1>
+    <h1>Welcome to the SailPoint UI Development Kit</h1>
     <p>Select an environment and connect to your SailPoint tenant to get started.</p>
     <div *ngIf="state.isWebMode" class="web-mode-indicator">
       <mat-icon color="primary">cloud</mat-icon>
@@ -143,18 +143,6 @@
               </div>
             </div>
             
-          </div>
-
-          <!-- OpenAI API Key - Available for all auth types -->
-          <div class="form-row">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>OpenAI API Key</mat-label>
-              <input matInput 
-                    type="password" 
-                    [(ngModel)]="state.actualTenant.openAIApiKey"
-                    name="openAIApiKey"
-                    placeholder="sk-...">
-            </mat-form-field>
           </div>
 
           <!-- Save Environment Button -->

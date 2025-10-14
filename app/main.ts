@@ -146,6 +146,7 @@ try {
   });
 
 
+
   ipcMain.handle('refresh-tokens', async (event) => {
     return refreshTokens();
   });
@@ -157,24 +158,28 @@ try {
   ipcMain.handle('check-oauth-code-flow-complete', async (event, uuid: string, environment: string) => {
     return checkOauthCodeFlowComplete(uuid, environment);
   });
+
   ipcMain.handle('get-tenants', () => {
     return getTenants();
   });
 
+  ipcMain.handle('update-environment', (event, config: UpdateEnvironmentRequest) => {
+    return updateEnvironment(config);
+  });
+
   ipcMain.handle(
-    'update-environment',
-    (event, config: UpdateEnvironmentRequest) => {
-      return updateEnvironment(config);
+    'delete-environment',
+    (event, environment: string) => {
+      return deleteEnvironment(environment);
     }
   );
 
-  ipcMain.handle('delete-environment', (event, environment: string) => {
-    return deleteEnvironment(environment);
-  });
-
-  ipcMain.handle('set-active-environment', (event, environment: string) => {
-    return setActiveEnvironment(environment);
-  });
+  ipcMain.handle(
+    'set-active-environment',
+    (event, environment: string) => {
+      return setActiveEnvironment(environment);
+    }
+  );
 
   ipcMain.handle('read-config', async () => {
     try {
@@ -184,11 +189,8 @@ try {
         return JSON.parse(configData);
       } else {
         let defaultConfig;
-        const appConfigPath = path.join(
-          process.resourcesPath,
-          'assets/config.json'
-        );
-
+        const appConfigPath = path.join(process.resourcesPath, 'assets/config.json')
+        
         try {
           if (fs.existsSync(appConfigPath)) {
             const appConfigData = fs.readFileSync(appConfigPath, 'utf-8');
@@ -202,25 +204,25 @@ try {
               },
               themes: {
                 light: {
-                  primary: '#0071ce',
-                  secondary: '#6c63ff',
-                  primaryText: '#415364',
-                  secondaryText: '#415364',
-                  hoverText: '#ffffff',
-                  background: '#ffffff',
-                  logo: 'assets/icons/logo.png',
+                  primary: "#0071ce",
+                  secondary: "#6c63ff",
+                  primaryText: "#415364",
+                  secondaryText: "#415364",
+                  hoverText: "#ffffff",
+                  background: "#ffffff",
+                  logo: "assets/icons/logo.png",
                 },
                 dark: {
-                  primary: '#54c0e8',
-                  secondary: '#f48fb1',
-                  primaryText: '#ffffff',
-                  secondaryText: '#cccccc',
-                  hoverText: '#54c0e8',
-                  background: '#151316',
-                  logo: 'assets/icons/logo-dark.png',
-                },
+                  primary: "#54c0e8",
+                  secondary: "#f48fb1",
+                  primaryText: "#ffffff",
+                  secondaryText: "#cccccc",
+                  hoverText: "#54c0e8",
+                  background: "#151316",
+                  logo: "assets/icons/logo-dark.png"
+                }
               },
-              currentTheme: 'light',
+              currentTheme: "light",
               version: '1.0.0',
             };
             console.log('Using hardcoded default config');
@@ -259,53 +261,11 @@ try {
     }
   });
 
-  ipcMain.handle('write-logo', async (event, buffer, fileName) => {
-    try {
-      const logoDir = path.join(app.getPath('userData'), 'assets', 'icons');
-      await fs.promises.mkdir(logoDir, { recursive: true });
-
-      const dest = path.join(logoDir, fileName);
-      await fs.promises.writeFile(dest, buffer);
-
-      return { success: true };
-    } catch (error) {
-      console.error('Error writing logo file:', error);
-      throw new Error('Failed to write logo file');
-    }
-  });
-
-  ipcMain.handle('check-logo-exists', async (event, fileName: string) => {
-    const fullPath = path.join(
-      app.getPath('userData'),
-      'assets',
-      'icons',
-      fileName
-    );
-    return fs.existsSync(fullPath);
-  });
-
-  ipcMain.handle('get-user-data-path', () => {
-    return app.getPath('userData');
-  });
-
-  ipcMain.handle('get-logo-data-url', async (event, fileName) => {
-    try {
-      const userDataPath = app.getPath('userData');
-      const logoPath = path.join(userDataPath, 'assets', 'icons', fileName);
-      const buffer = await fs.promises.readFile(logoPath);
-      const base64 = buffer.toString('base64');
-      const ext = path.extname(fileName).substring(1); // e.g., png
-      return `data:image/${ext};base64,${base64}`;
-    } catch (err) {
-      console.error('Failed to get logo data URL:', err);
-      return null;
-    }
-  });
-
   //#endregion
 
   // Populate SDK handlers
   setupSailPointSDKHandlers();
+
 } catch (e) {
   console.error('Error during app initialization', e);
 }

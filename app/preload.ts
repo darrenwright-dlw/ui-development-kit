@@ -1,12 +1,11 @@
-import { UpdateEnvironmentRequest } from './authentication/config';
+import { UpdateEnvironmentRequest } from "./authentication/config";
 
 const { contextBridge, ipcRenderer: ipcMain } = require('electron');
 const sdkPreloader = require('./sailpoint-sdk/sdk-preload');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Unified authentication and connection
-  unifiedLogin: (environment: string) =>
-    ipcMain.invoke('unified-login', environment),
+  unifiedLogin: (environment: string) => ipcMain.invoke('unified-login', environment),
   disconnectFromISC: () => ipcMain.invoke('disconnect-from-isc'),
   checkAccessTokenStatus: () => ipcMain.invoke('check-access-token-status'),
   getCurrentTokenDetails: (environment: string) => ipcMain.invoke('get-current-token-details', environment),
@@ -21,16 +20,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateEnvironment: (config: UpdateEnvironmentRequest) => ipcMain.invoke('update-environment', config),
   deleteEnvironment: (environment: string) => ipcMain.invoke('delete-environment', environment),
   setActiveEnvironment: (environment: string) => ipcMain.invoke('set-active-environment', environment),
+  
   // config file management
   readConfig: () => ipcMain.invoke('read-config'),
   writeConfig: (config: any) => ipcMain.invoke('write-config', config),
-
-  // Logo file management
-  writeLogo: (buffer, fileName) =>
-    ipcMain.invoke('write-logo', buffer, fileName),
-  checkLogoExists: (fileName) => ipcMain.invoke('check-logo-exists', fileName),
-  getUserDataPath: () => ipcMain.invoke('get-user-data-path'),
-  getLogoDataUrl: (fileName) => ipcMain.invoke('get-logo-data-url', fileName),
 
   // SDK functions
   ...sdkPreloader,

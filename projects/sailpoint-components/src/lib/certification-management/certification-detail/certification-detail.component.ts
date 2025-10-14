@@ -1,12 +1,5 @@
 import { CommonModule } from '@angular/common';
-import {
-  Component,
-  Input,
-  Output,
-  EventEmitter,
-  OnInit,
-  OnDestroy,
-} from '@angular/core';
+import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -35,7 +28,7 @@ import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzTimelineModule } from 'ng-zorro-antd/timeline';
 import { NzSelectModule } from 'ng-zorro-antd/select';
-import { NzUploadModule } from 'ng-zorro-antd/upload';
+import { NzUploadFile, NzUploadModule } from 'ng-zorro-antd/upload';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -1134,12 +1127,6 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const changeCount = this.decisionChanges.size;
-    console.log(
-      'Saving decision changes:',
-      Array.from(this.decisionChanges.entries())
-    );
-
     const reviewDecisionV2025 = Array.from(this.decisionChanges.entries()).map(
       ([id, decisionChange]) => ({
         id: id,
@@ -1157,7 +1144,7 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
         reviewDecisionV2025: reviewDecisionV2025,
       });
 
-      console.log('Response:', response);
+      console.log('Descision response:', response);
       // Check if response indicates an error
       if (response && typeof response === 'object' && 'status' in response) {
         const status = (response as any).status;
@@ -1842,7 +1829,7 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
   /**
    * Load CSV file using nz-upload component
    */
-  loadCSV = (file: any): boolean => {
+  loadCSV = (file: NzUploadFile): boolean => {
     // Validate file type
     if (!file.name.toLowerCase().endsWith('.csv')) {
       this.error = 'Please select a valid CSV file';
@@ -1858,7 +1845,7 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
     reader.onerror = () => {
       this.error = 'Error reading CSV file';
     };
-    reader.readAsText(file);
+    reader.readAsText(file as any as Blob);
 
     // Return false to prevent automatic upload
     return false;
@@ -1972,8 +1959,6 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
         message += `, ${errors.length} errors encountered`;
         console.warn('CSV processing errors:', errors);
       }
-
-      console.log(message);
 
       // Clear any previous errors if processing was successful
       if (errors.length === 0) {
