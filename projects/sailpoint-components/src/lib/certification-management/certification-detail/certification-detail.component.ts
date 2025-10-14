@@ -39,7 +39,19 @@ import { NzUploadModule } from 'ng-zorro-antd/upload';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import axios from 'axios';
+
+// Polyfill for Promise.allSettled for older environments
+if (!(Promise as any).allSettled) {
+  (Promise as any).allSettled = function (promises: Promise<any>[]) {
+    return Promise.all(
+      promises.map((p) =>
+        p
+          .then((value) => ({ status: 'fulfilled', value }))
+          .catch((reason) => ({ status: 'rejected', reason }))
+      )
+    );
+  };
+}
 
 // Interface for comprehensive certification details
 interface CertificationDetails {
@@ -100,8 +112,6 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
   @Input() certificationId!: string;
   @Input() onBack!: () => void;
   @Input() breadcrumbLabel?: string;
-
-  @Output() decisionsSaved = new EventEmitter<number>();
 
   private subscriptions = new Subscription();
   loading = false;
@@ -438,7 +448,7 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
       };
 
       // First, fetch certification details to get campaign ID
-      const certificationResult = await Promise.allSettled([
+      const certificationResult = await (Promise as any).allSettled([
         this.fetchCertificationDetails(this.certificationId),
         this.fetchReviewers(this.certificationId),
         this.fetchAccessReviewItems(this.certificationId),
@@ -569,7 +579,7 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
   /**
    * Format date for display
    */
-  formatDate(dateString: string | undefined): string {
+  formatDate(dateString: string | null | undefined): string {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleString();
   }
@@ -723,7 +733,7 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
   /**
    * Get progress status for identities
    */
-  getIdentitiesProgressStatus(): string {
+  getIdentitiesProgressStatus(): 'success' | 'active' | 'normal' | 'exception' {
     const percent = this.getIdentitiesProgressPercent();
     if (percent === 100) return 'success';
     if (percent >= 80) return 'active';
@@ -734,7 +744,7 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
   /**
    * Get progress status for decisions
    */
-  getDecisionsProgressStatus(): string {
+  getDecisionsProgressStatus(): 'success' | 'active' | 'normal' | 'exception' {
     const percent = this.getDecisionsProgressPercent();
     if (percent === 100) return 'success';
     if (percent >= 80) return 'active';
@@ -1160,9 +1170,6 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
 
       console.log('Decision changes saved successfully');
       this.message.success('Decision changes saved successfully');
-
-      // Emit the number of decisions saved for joke button tracking
-      this.decisionsSaved.emit(changeCount);
 
       // Clear NavigationStack cache after successful save to force reload of fresh data
       this.clearNavigationStackCache();
@@ -1835,7 +1842,7 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
   /**
    * Load CSV file using nz-upload component
    */
-  loadCSV = (file: File): boolean => {
+  loadCSV = (file: any): boolean => {
     // Validate file type
     if (!file.name.toLowerCase().endsWith('.csv')) {
       this.error = 'Please select a valid CSV file';
@@ -2013,112 +2020,5 @@ export class CertificationDetailComponent implements OnInit, OnDestroy {
     result.push(current.trim());
 
     return result;
-  }
-
-  /**
-   * Send reminder to reviewers
-   */
-  async remindReviewers(): Promise<void> {
-    if (this.remindLoading) {
-      return; // Prevent multiple simultaneous calls
-    }
-
-    // Validate that we have reviewers to remind
-    if (
-      !this.certificationDetails?.reviewers ||
-      this.certificationDetails.reviewers.length === 0
-    ) {
-      this.message.warning('No reviewers found to send reminders to');
-      return;
-    }
-
-    // Validate that we have a certification ID
-    if (!this.certificationDetails?.certification?.id) {
-      this.message.error('Certification ID is missing. Cannot send reminders.');
-      return;
-    }
-
-    this.remindLoading = true;
-
-    try {
-      // Step 1: Get OAuth access token
-      const tokenResponse = await axios.post(
-        'https://devrel-ga-5420.api.identitynow-demo.com/oauth/token',
-        new URLSearchParams({
-          grant_type: 'client_credentials',
-          client_id: '91083f4c-3b4d-4fff-b836-fb87dc0aff48',
-          client_secret:
-            'ba688b6b52996d29998045622feb67c0cdc6de3358cee529d5a2f8a8f6707fa9',
-        }),
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-        }
-      );
-
-      const accessToken = tokenResponse.data.access_token;
-      if (!accessToken) {
-        this.message.error('Failed to obtain access token');
-        return;
-      }
-
-      // Step 2: Execute workflow with Bearer token
-      const workflowResponse = await axios.post(
-        'https://devrel-ga-5420.api.identitynow-demo.com/beta/workflows/execute/external/701c11e4-93f6-42fe-917a-3f9d7acc904e',
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      // Check if the response contains an error message
-      if (workflowResponse?.data?.message) {
-        this.message.error(
-          `Failed to send reminders: ${workflowResponse.data.message}`
-        );
-        return;
-      }
-
-      // Check if we have a valid workflow execution ID
-      if (!workflowResponse?.data?.workflowExecutionId) {
-        this.message.error(
-          'Failed to send reminders: No execution ID received from workflow'
-        );
-        return;
-      }
-
-      // Show success message with reviewer count and execution ID
-      const reviewerCount = this.certificationDetails.reviewers.length;
-      this.message.success(
-        `Reminder sent successfully to ${reviewerCount} reviewer${
-          reviewerCount > 1 ? 's' : ''
-        } (Execution ID: ${workflowResponse.data.workflowExecutionId})`
-      );
-    } catch (error) {
-      // Show appropriate error message based on error type
-      if (axios.isAxiosError(error)) {
-        if (error.response?.data?.message) {
-          this.message.error(
-            `Failed to send reminders: ${error.response.data.message}`
-          );
-        } else if (error.response?.status) {
-          this.message.error(
-            `Failed to send reminders: HTTP ${error.response.status} - ${error.response.statusText}`
-          );
-        } else {
-          this.message.error(`Failed to send reminders: ${error.message}`);
-        }
-      } else if (error instanceof Error) {
-        this.message.error(`Failed to send reminders: ${error.message}`);
-      } else {
-        this.message.error('Failed to send reminders. Please try again later.');
-      }
-    } finally {
-      this.remindLoading = false;
-    }
   }
 }

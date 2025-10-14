@@ -2,8 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,13 +12,6 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { SailPointSDKService } from '../sailpoint-sdk.service';
 import { IdentityCertificationDtoV2025 } from 'sailpoint-api-client';
 import { GenericDialogComponent } from '../generic-dialog/generic-dialog.component';
-import {
-  JokeDialogComponent,
-  JokeData,
-} from './joke-dialog/joke-dialog.component';
-import { ConnectionService } from 'src/app/services/connection.service';
-import { ElectronApiFactoryService } from '../services/electron-api-factory.service';
-import z from 'zod/v4';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import {
@@ -161,8 +152,6 @@ export class CertificationManagementComponent implements OnInit, OnDestroy {
   certifications: IdentityCertificationDtoV2025[] = []; // Original data from API
   filteredCertifications: IdentityCertificationDtoV2025[] = []; // Filtered data for display
   loading = false;
-  jokeLoading = false;
-  openAIApiKey: string | null = null;
   displayedColumns: string[] = [
     'name',
     'campaignName',
@@ -183,9 +172,6 @@ export class CertificationManagementComponent implements OnInit, OnDestroy {
   visibleColumns: Set<string> = new Set();
   columnDropdownVisible = false;
 
-  // Joke button properties
-  isJokeButtonEnabled = false;
-  jokeButtonIcon = 'smile';
   totalSavedDecisions = 0;
 
   // Campaign summary properties
@@ -410,8 +396,6 @@ export class CertificationManagementComponent implements OnInit, OnDestroy {
   constructor(
     private sdk: SailPointSDKService,
     private dialog: MatDialog,
-    private electronService: ElectronApiFactoryService,
-    private connectionService: ConnectionService,
     private navStack: NavigationStackService,
     private i18n: NzI18nService
   ) {
@@ -424,14 +408,6 @@ export class CertificationManagementComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.i18n.setLocale(en_US);
-    // Monitor environment changes and load OpenAI API Key
-    this.subscriptions.add(
-      this.connectionService.currentEnvironment$.subscribe((env) => {
-        if (env?.name) {
-          void this.loadOpenAIApiKey(String(env.name));
-        }
-      })
-    );
 
     // Initialize with root level
     this.initializeRootLevel();
@@ -539,47 +515,6 @@ export class CertificationManagementComponent implements OnInit, OnDestroy {
     this.navStack.pop();
   }
 
-  async generateJoke(): Promise<JokeData | null> {
-    if (!this.openAIApiKey) {
-      console.error('OpenAI API Key not available');
-      return null;
-    }
-    try {
-      const openai = createOpenAI({
-        apiKey: this.openAIApiKey,
-      });
-      const { object } = await generateObject({
-        model: openai('gpt-4o'),
-        schema: z.object({
-          joke: z.string(),
-          punchline: z.string(),
-        }),
-        prompt:
-          'Please generate a joke and punchline about the identity governance related to certifications and access reviews.',
-      });
-      console.log('Generated joke:', object);
-      return object as JokeData;
-    } catch (error) {
-      console.error('Error generating joke:', error);
-      return null;
-    }
-  }
-
-  async loadOpenAIApiKey(environmentName: string) {
-    try {
-      const tenants = await this.electronService.getApi().getTenants();
-      const tenant = tenants.find((t) => t.name === environmentName);
-      this.openAIApiKey = tenant?.openAIApiKey || null;
-      console.log(
-        'OpenAI API Key loaded for certification management:',
-        this.openAIApiKey ? 'Available' : 'Not set'
-      );
-    } catch (error) {
-      console.error('Error loading OpenAI API Key:', error);
-    }
-    console.log('OpenAI API Key:', this.openAIApiKey);
-  }
-
   /**
    * Load certification data from the API
    * Sets both original and filtered data arrays
@@ -642,93 +577,6 @@ export class CertificationManagementComponent implements OnInit, OnDestroy {
         message: message,
       },
     });
-  }
-
-  // Show joke dialog
-  async showJokeDialog(): Promise<void> {
-    // Only allow if button is enabled
-    if (!this.isJokeButtonEnabled) {
-      return;
-    }
-
-    // Set loading state
-    this.jokeLoading = true;
-
-    try {
-      // Generate joke using AI
-      const generatedJoke = await this.generateJoke();
-
-      // Use generated joke or fallback to default
-      const jokeData: JokeData = generatedJoke || {
-        joke: 'Why did the identity governance officer break up with their partner?',
-        punchline:
-          "Too many access reviews; they just couldn't handle the commitment!",
-      };
-
-      // Open dialog with the joke
-      this.dialog.open(JokeDialogComponent, {
-        width: '500px',
-        data: jokeData,
-      });
-
-      // Reset button to initial state after showing joke
-      this.resetJokeButton();
-    } catch (error) {
-      console.error('Error in showJokeDialog:', error);
-
-      // Show fallback joke even if generation fails
-      const fallbackJoke: JokeData = {
-        joke: 'Why did the identity governance officer break up with their partner?',
-        punchline:
-          "Too many access reviews; they just couldn't handle the commitment!",
-      };
-
-      this.dialog.open(JokeDialogComponent, {
-        width: '500px',
-        data: fallbackJoke,
-      });
-
-      // Reset button to initial state after showing joke
-      this.resetJokeButton();
-    } finally {
-      // Always clear loading state
-      this.jokeLoading = false;
-    }
-  }
-
-  /**
-   * Get tooltip text for joke button
-   */
-  getJokeButtonTooltip(): string {
-    if (this.jokeLoading) {
-      return 'Generating your surprise... ⏳';
-    } else if (this.isJokeButtonEnabled) {
-      return 'Click for a surprise! 🎁';
-    } else {
-      const remaining = 10 - this.totalSavedDecisions;
-      return `Complete ${remaining} more decisions to unlock the joke! (${this.totalSavedDecisions}/10)`;
-    }
-  }
-
-  /**
-   * Update decision count and check if joke button should be enabled
-   */
-  updateDecisionCount(savedCount: number): void {
-    this.totalSavedDecisions += savedCount;
-
-    if (this.totalSavedDecisions >= 10 && !this.isJokeButtonEnabled) {
-      this.isJokeButtonEnabled = true;
-      this.jokeButtonIcon = 'gift';
-    }
-  }
-
-  /**
-   * Reset joke button to initial state
-   */
-  resetJokeButton(): void {
-    this.isJokeButtonEnabled = false;
-    this.jokeButtonIcon = 'smile';
-    this.totalSavedDecisions = 0;
   }
 
   // Track by function for ngFor

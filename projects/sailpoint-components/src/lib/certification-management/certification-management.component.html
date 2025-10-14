@@ -263,8 +263,8 @@
               <tbody>
                 <tr *ngFor="let certification of certificationTable.data; trackBy: trackByCertificationId">
                   <td *ngFor="let column of getVisibleColumns()">
-                    <span [class]="column.cssClass ? column.cssClass(column.dataAccessor(certification)) : ''">
-                      {{ column.formatter ? column.formatter(column.dataAccessor(certification)) : column.dataAccessor(certification) }}
+                    <span [class]="column.cssClass && column.dataAccessor ? column.cssClass(column.dataAccessor(certification)) : ''">
+                      {{ column.formatter && column.dataAccessor ? column.formatter(column.dataAccessor(certification)) : (column.dataAccessor ? column.dataAccessor(certification) : '') }}
                     </span>
                   </td>
                   <td nzRight>
@@ -333,8 +333,7 @@
         <app-certification-detail 
           [certificationId]="getCurrentData()?.certificationId"
           [onBack]="goBack.bind(this)"
-          [breadcrumbLabel]="getCurrentBreadcrumbLabel()"
-          (decisionsSaved)="updateDecisionCount($event)">
+          [breadcrumbLabel]="getCurrentBreadcrumbLabel()">
         </app-certification-detail>
       </div>
 
@@ -372,18 +371,4 @@
     </ng-container>
   </div>
   
-  <!-- Floating Action Button positioned outside the card for proper positioning -->
-  <button 
-    nz-button
-    nzType="primary"
-    nzShape="circle"
-    nzSize="large"
-    (click)="showJokeDialog()"
-    [disabled]="!isJokeButtonEnabled || jokeLoading"
-    nz-tooltip
-    [nzTooltipTitle]="getJokeButtonTooltip()"
-    nzTooltipPlacement="left"
-    class="floating-action-button">
-    <span nz-icon [nzType]="jokeLoading ? 'loading' : jokeButtonIcon" [class.spinning]="jokeLoading"></span>
-  </button>
 </div>

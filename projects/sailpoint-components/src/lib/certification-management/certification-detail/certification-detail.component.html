@@ -11,7 +11,7 @@
     </div>
     <div class="phase-indicator" [ngClass]="getPhaseClass()">
       <div class="phase-dot"></div>
-      <span class="phase-text">{{ certificationDetails.certification.phase || 'N/A' }}</span>
+      <span class="phase-text">{{ certificationDetails?.certification?.phase || 'N/A' }}</span>
     </div>
   </div>
   
@@ -83,7 +83,7 @@
             <nz-statistic 
               [nzValue]="certificationDetails.certification.identitiesCompleted || 0" 
               nzTitle="Identities Completed" 
-              [nzSuffix]="'/' + (certificationDetails.certification.identitiesTotal || 0)">
+              [nzSuffix]="'/' + (certificationDetails.certification?.identitiesTotal || 0)">
             </nz-statistic>
             <nz-progress 
               [nzPercent]="getIdentitiesProgressPercent()" 
@@ -95,9 +95,9 @@
           <!-- Decisions Progress -->
           <div class="progress-item">
             <nz-statistic 
-              [nzValue]="certificationDetails.certification.decisionsMade || 0" 
+              [nzValue]="certificationDetails.certification?.decisionsMade || 0" 
               nzTitle="Decisions Made" 
-              [nzSuffix]="'/' + (certificationDetails.certification.decisionsTotal || 0)">
+              [nzSuffix]="'/' + (certificationDetails.certification?.decisionsTotal || 0)">
             </nz-statistic>
             <nz-progress 
               [nzPercent]="getDecisionsProgressPercent()" 
@@ -166,10 +166,10 @@
               </nz-timeline-item>
               
               <nz-timeline-item 
-                [nzColor]="isOverdue ? (certificationDetails.certification.completed ? 'green' : 'red') : 'orange'">
-                <strong>Due:</strong> {{ formatDate(certificationDetails.certification.due) }}
-                <span *ngIf="isOverdue && !certificationDetails.certification.completed" class="overdue-text"> ({{ getDaysOverdue() }} days overdue)</span>
-                <span *ngIf="isOverdue && certificationDetails.certification.completed" class="completed-late-text"> (Completed! Great job! 🎉)</span>
+                [nzColor]="isOverdue ? (certificationDetails.certification?.completed ? 'green' : 'red') : 'orange'">
+                <strong>Due:</strong> {{ formatDate(certificationDetails.certification?.due) }}
+                <span *ngIf="isOverdue && !certificationDetails.certification?.completed" class="overdue-text"> ({{ getDaysOverdue() }} days overdue)</span>
+                <span *ngIf="isOverdue && certificationDetails.certification?.completed" class="completed-late-text"> (Completed! Great job! 🎉)</span>
               </nz-timeline-item>
             </nz-timeline>
             
@@ -198,18 +198,6 @@
                 class="view-identity-btn">
                 <span nz-icon nzType="user"></span>
                 View Identity
-              </button>
-              <button 
-                *ngIf="!certificationDetails?.certification?.completed"
-                nz-button 
-                nzType="default" 
-                nzSize="small"
-                (click)="remindReviewers()"
-                [nzLoading]="remindLoading"
-                [disabled]="remindLoading"
-                class="remind-btn">
-                <span nz-icon nzType="bell" *ngIf="!remindLoading"></span>
-                {{ remindLoading ? 'Sending...' : 'Remind' }}
               </button>
             </div>
           </div>
@@ -537,8 +525,6 @@
             color="primary" 
             (click)="signOffCertification()"
             [disabled]="loading"
-            [matTooltip]="'Sign off this certification to complete the review process'"
-            matTooltipPosition="above"
             class="sign-off-btn"
             *ngIf="shouldShowSignOffButton()">
             <mat-icon>check_circle</mat-icon>

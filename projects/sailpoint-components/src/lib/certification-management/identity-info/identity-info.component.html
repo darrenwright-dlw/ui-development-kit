@@ -28,10 +28,10 @@
         <nz-avatar nzSize="large" nzIcon="user" [nzSrc]="identity.attributes?.['photo']"></nz-avatar>
       </div>
       <div class="identity-details">
-        <h1 class="identity-name">{{ identity.attributes?.displayName || identity.name }}</h1>
+        <h1 class="identity-name">{{ getAttributeValue('displayName') || identity.name }}</h1>
         <div class="identity-meta">
-          <nz-tag [nzColor]="getStatusColor(identity.identityStatus)">{{ identity.identityStatus }}</nz-tag>
-          <nz-tag [nzColor]="getProcessingStateColor(identity.processingState)">{{ identity.processingState }}</nz-tag>
+          <nz-tag [nzColor]="getStatusColor(identity.identityStatus || '')">{{ identity.identityStatus }}</nz-tag>
+          <nz-tag [nzColor]="getProcessingStateColor(identity.processingState || '')">{{ identity.processingState }}</nz-tag>
           <span class="identity-id">ID: {{ identity.id }}</span>
         </div>
         <div class="identity-contact">
@@ -45,7 +45,7 @@
           </span>
           <span *ngIf="identity.managerRef?.name" class="contact-item">
             <nz-icon nzType="team"></nz-icon>
-            Manager: {{ identity.managerRef.name }}
+            Manager: {{ identity.managerRef?.name || 'N/A' }}
           </span>
         </div>
       </div>
@@ -70,19 +70,19 @@
         <nz-card nzTitle="Basic Information" [nzBordered]="false">
           <nz-descriptions nzBordered [nzColumn]="1" nzSize="small">
             <nz-descriptions-item nzTitle="First Name">
-              {{ identity.attributes?.firstname || 'N/A' }}
+              {{ getAttributeValue('firstname') }}
             </nz-descriptions-item>
             <nz-descriptions-item nzTitle="Last Name">
-              {{ identity.attributes?.lastname || 'N/A' }}
+              {{ getAttributeValue('lastname') }}
             </nz-descriptions-item>
             <nz-descriptions-item nzTitle="Display Name">
-              {{ identity.attributes?.displayName || 'N/A' }}
+              {{ getAttributeValue('displayName') }}
             </nz-descriptions-item>
             <nz-descriptions-item nzTitle="UID">
-              {{ identity.attributes?.uid || 'N/A' }}
+              {{ getAttributeValue('uid') }}
             </nz-descriptions-item>
             <nz-descriptions-item nzTitle="Identification Number">
-              {{ identity.attributes?.identificationNumber || 'N/A' }}
+              {{ getAttributeValue('identificationNumber') }}
             </nz-descriptions-item>
             <nz-descriptions-item nzTitle="Manager">
               {{ identity.managerRef?.name || 'N/A' }}
@@ -91,7 +91,7 @@
               {{ identity.isManager ? 'Yes' : 'No' }}
             </nz-descriptions-item>
             <nz-descriptions-item nzTitle="Cloud Status">
-              {{ identity.attributes?.cloudStatus || 'N/A' }}
+              {{ getAttributeValue('cloudStatus') }}
             </nz-descriptions-item>
           </nz-descriptions>
         </nz-card>

@@ -109,17 +109,17 @@
         <div class="owner-info">
           <div class="info-item">
             <label>Name:</label>
-            <span>{{ accessReviewItem.accessSummary.entitlement?.owner.name }}</span>
+            <span>{{ accessReviewItem.accessSummary.entitlement?.owner?.name || 'N/A' }}</span>
           </div>
           <div class="info-item">
             <label>Email:</label>
-            <span>{{ accessReviewItem.accessSummary.entitlement?.owner.email }}</span>
+            <span>{{ accessReviewItem.accessSummary.entitlement?.owner?.email || 'N/A' }}</span>
           </div>
         </div>
       </div>
 
       <!-- Account Information -->
-      <div class="account-section" *ngIf="accessReviewItem.accessSummary.entitlement?.account">
+      <div class="account-section" *ngIf="accessReviewItem.accessSummary.entitlement?.account as account">
         <h4 class="subsection-title">Account Information</h4>
         <div class="account-info">
           <div class="info-item">
@@ -132,57 +132,57 @@
           </div>
           <div class="info-item">
             <label>Native Identity:</label>
-            <span>{{ accessReviewItem.accessSummary.entitlement?.account.nativeIdentity }}</span>
+            <span>{{ account.nativeIdentity }}</span>
           </div>
           <div class="info-item">
             <label>Status:</label>
-            <span class="status-badge" [class]="accessReviewItem.accessSummary.entitlement?.account.disabled ? 'badge-danger' : 'badge-success'">
-              {{ accessReviewItem.accessSummary.entitlement?.account.disabled ? 'Disabled' : 'Active' }}
+            <span class="status-badge" [class]="account.disabled ? 'badge-danger' : 'badge-success'">
+              {{ account.disabled ? 'Disabled' : 'Active' }}
             </span>
           </div>
           <div class="info-item">
             <label>Locked:</label>
-            <span class="status-badge" [class]="accessReviewItem.accessSummary.entitlement?.account.locked ? 'badge-warning' : 'badge-success'">
-              {{ accessReviewItem.accessSummary.entitlement?.account.locked ? 'Yes' : 'No' }}
+            <span class="status-badge" [class]="account.locked ? 'badge-warning' : 'badge-success'">
+              {{ account.locked ? 'Yes' : 'No' }}
             </span>
           </div>
           <div class="info-item">
             <label>Created:</label>
-            <span>{{ formatDate(accessReviewItem.accessSummary.entitlement?.account.created || '') }}</span>
+            <span>{{ formatDate(account.created || '') }}</span>
           </div>
           <div class="info-item">
             <label>Modified:</label>
-            <span>{{ formatDate(accessReviewItem.accessSummary.entitlement?.account.modified || '') }}</span>
+            <span>{{ formatDate(account.modified || '') }}</span>
           </div>
-          <div class="info-item" *ngIf="accessReviewItem.accessSummary.entitlement?.account.activityInsights">
+          <div class="info-item" *ngIf="account.activityInsights as activityInsights">
             <label>Usage Days:</label>
-            <span>{{ accessReviewItem.accessSummary.entitlement?.account.activityInsights.usageDays }} days</span>
+            <span>{{ activityInsights?.usageDays }} days</span>
           </div>
         </div>
       </div>
 
       <!-- Data Access Information -->
-      <div class="data-access-section" *ngIf="accessReviewItem.accessSummary.entitlement?.dataAccess">
+      <div class="data-access-section" *ngIf="accessReviewItem.accessSummary.entitlement?.dataAccess as dataAccess">
         <h4 class="subsection-title">Data Access</h4>
         <div class="data-access-info">
           <div class="info-item">
             <label>Impact Score:</label>
-            <span class="impact-score" [class]="'impact-' + (accessReviewItem.accessSummary.entitlement?.dataAccess.impactScore.value || '').toLowerCase()">
-              {{ accessReviewItem.accessSummary.entitlement?.dataAccess.impactScore.value }}
+            <span class="impact-score" [class]="'impact-' + ((dataAccess.impactScore?.value || '') | lowercase)">
+              {{ dataAccess.impactScore?.value }}
             </span>
           </div>
-          <div class="info-item" *ngIf="accessReviewItem.accessSummary.entitlement?.dataAccess.policies?.length">
+          <div class="info-item" *ngIf="dataAccess.policies?.length">
             <label>Policies:</label>
             <div class="policy-list">
-              <span class="policy-badge" *ngFor="let policy of accessReviewItem.accessSummary.entitlement?.dataAccess.policies">
+              <span class="policy-badge" *ngFor="let policy of dataAccess.policies">
                 {{ policy.value }}
               </span>
             </div>
           </div>
-          <div class="info-item" *ngIf="accessReviewItem.accessSummary.entitlement?.dataAccess.categories?.length">
+          <div class="info-item" *ngIf="dataAccess.categories?.length">
             <label>Categories:</label>
             <div class="category-list">
-              <span class="category-badge" *ngFor="let category of accessReviewItem.accessSummary.entitlement?.dataAccess.categories">
+              <span class="category-badge" *ngFor="let category of dataAccess.categories">
                 {{ category.value }} ({{ category.matchCount }})
               </span>
             </div>
@@ -244,11 +244,11 @@
         <div class="owner-info">
           <div class="info-item">
             <label>Name:</label>
-            <span>{{ accessReviewItem.accessSummary.accessProfile?.owner.name }}</span>
+            <span>{{ accessReviewItem.accessSummary.accessProfile?.owner?.name || 'N/A' }}</span>
           </div>
           <div class="info-item">
             <label>Email:</label>
-            <span>{{ accessReviewItem.accessSummary.accessProfile?.owner.email }}</span>
+            <span>{{ accessReviewItem.accessSummary.accessProfile?.owner?.email || 'N/A' }}</span>
           </div>
         </div>
       </div>
@@ -303,11 +303,11 @@
         <div class="owner-info">
           <div class="info-item">
             <label>Name:</label>
-            <span>{{ accessReviewItem.accessSummary.role?.owner.name }}</span>
+            <span>{{ accessReviewItem.accessSummary.role?.owner?.name || 'N/A' }}</span>
           </div>
           <div class="info-item">
             <label>Email:</label>
-            <span>{{ accessReviewItem.accessSummary.role?.owner.email }}</span>
+            <span>{{ accessReviewItem.accessSummary.role?.owner?.email || 'N/A' }}</span>
           </div>
         </div>
       </div>
