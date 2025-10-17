@@ -1,5 +1,6 @@
-import { Component, OnInit, Inject, OnDestroy } from '@angular/core';
+import { Component, OnInit, Inject, OnDestroy, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { ConnectionService } from '../services/connection.service';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatDialog } from '@angular/material/dialog';
@@ -25,6 +26,7 @@ import { ElectronApiFactoryService } from 'sailpoint-components';
 import { DOCUMENT } from '@angular/common';
 import { WebAuthComponent, AuthEvent } from '../web-auth/web-auth.component';
 import { GenericDialogComponent, OAuthDialogComponent, OAuthDialogData } from 'sailpoint-components'
+import { environment } from '../../environments/environment';
 
 
 type AuthMethods = "oauth" | "pat";
@@ -116,6 +118,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   oauthAuthUrl: string | null = null;
   pollIntervalId: ReturnType<typeof setInterval> | undefined = undefined;
 
+  private http = inject(HttpClient);
+
   constructor(
     private router: Router,
     private connectionService: ConnectionService,
@@ -132,8 +136,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     void this.loadTenants();
-    void this.checkLoginStatus()
-
     
     this.connectionService.connectedSubject$.subscribe((connection) => {
       this.state.isConnected = connection.connected;
@@ -144,17 +146,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       void this.checkSessionStatus();
     }
 
-    // Check for OAuth callback parameters
-    if (this.state.isWebMode) {
-      const url = new URL(document.location.href);
-      if (url.searchParams.has('success')) {
-        this.showSnackbar('Login successful!');
-        void this.checkLoginStatus();
-      } else if (url.searchParams.has('error')) {
-        const errorMessage = url.searchParams.get('message') || 'Unknown error';
-        this.showSnackbar(`OAuth error: ${errorMessage}`);
-      }
-    }
+    // In web mode, the WebAuthComponent will handle login status checks and OAuth callbacks
+    // No need to duplicate that logic here
 
     this.state.loading = false;
 
@@ -188,11 +181,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (!this.state.isWebMode) return;
 
     try {
-      const response = await fetch('/api/auth/login-status', {
-        credentials: 'include' // Important for session cookies
-      });
-      
-      const status = await response.json();
+      const apiUrl = environment.webApiUrl || '/api';
+      const status = await this.http.get<any>(`${apiUrl}/auth/login-status`, {
+        withCredentials: true
+      }).toPromise();
       
       if (status.isLoggedIn && status.environment) {
         // Update connection state
@@ -354,10 +346,13 @@ export class HomeComponent implements OnInit, OnDestroy {
         connected: true, 
         name: event.username || 'User' 
       });
-      this.showSnackbar(`Successfully authenticated as ${event.username}`);
+      if (event.username) {
+        this.showSnackbar(`Successfully authenticated as ${event.username}`);
+      }
     } else {
       // Handle logout or auth failure
       this.state.isConnected = false;
+      this.state.name = '';
       this.connectionService.connectedSubject$.next({ connected: false });
       if (event.message) {
         this.showSnackbar(event.message);
@@ -369,10 +364,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (this.state.isWebMode) {
       // Call logout endpoint for web mode
       try {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          credentials: 'include'
-        });
+        const apiUrl = environment.webApiUrl || '/api';
+        await this.http.post(`${apiUrl}/auth/logout`, {}, {
+          withCredentials: true
+        }).toPromise();
       } catch (error) {
         console.error('Error during web logout:', error);
       }

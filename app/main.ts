@@ -145,8 +145,6 @@ try {
     return getCurrentTokenDetails(environment);
   });
 
-
-
   ipcMain.handle('refresh-tokens', async (event) => {
     return refreshTokens();
   });
