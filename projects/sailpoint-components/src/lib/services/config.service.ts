@@ -102,8 +102,16 @@ export class ConfigService {
       icon: 'dashboard',
       description: 'Manage accounts in SailPoint.',
       enabled: false,
-    }
-  ];
+    },
+        {
+            name: 'owner-graph',
+            displayName: 'Owner Graph',
+            route: '/owner-graph',
+            icon: 'dashboard',
+            description: 'Manage owner graph in SailPoint.',
+            enabled: false
+        }
+    ];
 
   // Default theme configurations
   private defaultLightTheme: ThemeConfig = {

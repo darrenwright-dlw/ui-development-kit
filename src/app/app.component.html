@@ -142,6 +142,11 @@
         <mat-icon class="card-icon">dashboard</mat-icon>
         Accounts
       </a>
+      <a *ngIf="isComponentEnabled('owner-graph')" mat-list-item class="sidebar-link" routerLink="/owner-graph" routerLinkActive="active-link"
+        [class.disabled]="!isConnected" (click)="onNavItemClick($event)">
+        <mat-icon class="card-icon">dashboard</mat-icon>
+        Owner Graph
+      </a>
 
       
     </mat-nav-list>
