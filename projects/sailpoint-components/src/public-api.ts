@@ -22,3 +22,4 @@ export * from './lib/transforms/transforms.component';
 export * from './lib/attach-rule/attach-rule.component';
 
 export * from './lib/accounts/accounts.component';
+export * from './lib/cronicle/cronicle.component';

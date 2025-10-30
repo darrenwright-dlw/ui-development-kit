@@ -102,8 +102,16 @@ export class ConfigService {
       icon: 'dashboard',
       description: 'Manage accounts in SailPoint.',
       enabled: false,
-    }
-  ];
+    },
+        {
+            name: 'cronicle',
+            displayName: 'Cronicle',
+            route: '/cronicle',
+            icon: 'dashboard',
+            description: 'Manage cronicle in SailPoint.',
+            enabled: false
+        }
+    ];
 
   // Default theme configurations
   private defaultLightTheme: ThemeConfig = {
