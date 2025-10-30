@@ -71,12 +71,12 @@
 
                 <!-- Campaign Card -->
                 <mat-card class="campaign-card" *ngIf="getCurrentCampaign() as summary">
-                  <mat-card-header>
-                    <mat-card-title class="campaign-name">{{ summary.campaignName }}</mat-card-title>
+                  <div class="campaign-header">
+                    <h3 class="campaign-name">{{ summary.campaignName }}</h3>
                     <mat-chip [style.background-color]="getCampaignTypeColor(summary.campaignType)">
                       {{ summary.campaignType }}
                     </mat-chip>
-                  </mat-card-header>
+                  </div>
                   <mat-card-content>
                     <p class="campaign-description" *ngIf="summary.campaignDescription">
                       {{ summary.campaignDescription }}
