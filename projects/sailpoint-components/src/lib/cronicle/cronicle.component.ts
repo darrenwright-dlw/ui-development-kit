@@ -31,6 +31,8 @@ import { SailPointSDKService } from '../sailpoint-sdk.service';
 // Local components
 import { GenericDialogComponent } from '../generic-dialog/generic-dialog.component';
 import { SourceActionsDialogComponent, SourceActionsDialogData } from './dialogs/source-actions-dialog.component';
+import { SearchBarComponent } from './utils/search-bar/search-bar.component';
+import { ColumnCustomizerComponent } from './utils/column-customizer/column-customizer.component';
 
 
 type SourceRow = SourceV2025 & Record<string, unknown>;
@@ -86,8 +88,9 @@ interface AggregationOverlap {
     MatSelectModule,
     MatDialogModule,
     MatIconModule,
-    MatTooltipModule
-
+    MatTooltipModule,
+    SearchBarComponent,
+    ColumnCustomizerComponent
   ],
   templateUrl: './cronicle.component.html',
   styleUrls: ['./cronicle.component.scss'],
