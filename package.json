@@ -68,7 +68,6 @@
     "@angular/platform-browser": "19.2.9",
     "@angular/platform-browser-dynamic": "19.2.9",
     "@angular/router": "19.2.9",
-    "@ant-design/icons-angular": "19.0.0",
     "@babel/runtime": "7.28.4",
     "@codemirror/legacy-modes": "6.5.1",
     "@codemirror/theme-one-dark": "6.1.3",

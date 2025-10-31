@@ -61,13 +61,6 @@ interface AccessReviewColumnItem {
   cssClass?: (value: any) => string;
 }
 
-// Interface for uploadable files (replacement for NzUploadFile)
-interface UploadFile {
-  name: string;
-  size?: number;
-  type?: string;
-}
-
 // Interface for decision changes with optional comment
 interface DecisionChange {
   decision: string;
