@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -96,7 +96,7 @@ export class CertificationManagementComponent implements OnInit, OnDestroy, Afte
   filteredCertifications = new MatTableDataSource<IdentityCertificationDtoV2025>([]); // Filtered data for display
   loading = false;
   
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatPaginator, { static: false }) paginator!: MatPaginator;
   displayedColumns: string[] = [
     'name',
     'campaignName',
@@ -342,7 +342,8 @@ export class CertificationManagementComponent implements OnInit, OnDestroy, Afte
   constructor(
     private sdk: SailPointSDKService,
     private dialog: MatDialog,
-    private navStack: NavigationStackService
+    private navStack: NavigationStackService,
+    private cdr: ChangeDetectorRef
   ) {
     // Subscribe to stack state changes
     this.navStack.getStackState().subscribe((state) => {
@@ -364,10 +365,10 @@ export class CertificationManagementComponent implements OnInit, OnDestroy, Afte
 
   ngAfterViewInit() {
     // Connect paginator to data source after view initialization
-    // Use setTimeout to ensure this happens after Angular's change detection
-    setTimeout(() => {
+    if (this.paginator) {
       this.filteredCertifications.paginator = this.paginator;
-    });
+      this.cdr.detectChanges();
+    }
   }
 
   ngOnDestroy() {
@@ -415,8 +416,12 @@ export class CertificationManagementComponent implements OnInit, OnDestroy, Afte
       );
     }
     
-    // Reset paginator to first page after filtering
+    // Reset paginator to first page after filtering and ensure it's connected
     if (this.paginator) {
+      // Ensure paginator is connected
+      if (!this.filteredCertifications.paginator) {
+        this.filteredCertifications.paginator = this.paginator;
+      }
       this.paginator.firstPage();
     }
   }
@@ -490,13 +495,6 @@ export class CertificationManagementComponent implements OnInit, OnDestroy, Afte
         this.generateCampaignSummaries();
         // Populate filter options after loading data
         this.populateFilterOptions();
-        
-        // Reconnect paginator after data is set and other operations complete
-        setTimeout(() => {
-          if (this.paginator) {
-            this.filteredCertifications.paginator = this.paginator;
-          }
-        });
       } else {
         console.error('Error loading certifications:', res.statusText);
       }
@@ -504,6 +502,13 @@ export class CertificationManagementComponent implements OnInit, OnDestroy, Afte
       console.error('Error loading certifications:', error);
     } finally {
       this.loading = false;
+      // Connect paginator after view updates (when *ngIf="!loading" becomes true)
+      setTimeout(() => {
+        if (this.paginator && !this.filteredCertifications.paginator) {
+          this.filteredCertifications.paginator = this.paginator;
+          this.cdr.detectChanges();
+        }
+      });
     }
   }
 
