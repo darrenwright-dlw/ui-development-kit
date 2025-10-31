@@ -89,15 +89,15 @@
                         <div class="stat-row">
                           <div class="stat-item">
                             <div class="stat-label">Total</div>
-                            <div class="stat-value">📋 {{ summary.totalCertifications }}</div>
+                            <div class="stat-value">{{ summary.totalCertifications }}</div>
                           </div>
                           <div class="stat-item">
                             <div class="stat-label">Completed</div>
-                            <div class="stat-value" style="color: #52c41a">✅ {{ summary.completedCertifications }}</div>
+                            <div class="stat-value">{{ summary.completedCertifications }}</div>
                           </div>
                           <div class="stat-item">
                             <div class="stat-label">Incomplete</div>
-                            <div class="stat-value" style="color: #faad14">⏳ {{ summary.incompleteCertifications }}</div>
+                            <div class="stat-value">{{ summary.incompleteCertifications }}</div>
                           </div>
                         </div>
                       </div>
@@ -108,15 +108,15 @@
                         <div class="stat-row">
                           <div class="stat-item">
                             <div class="stat-label">Total</div>
-                            <div class="stat-value">👥 {{ summary.totalIdentities }}</div>
+                            <div class="stat-value">{{ summary.totalIdentities }}</div>
                           </div>
                           <div class="stat-item">
                             <div class="stat-label">Completed</div>
-                            <div class="stat-value" style="color: #52c41a">✅ {{ summary.completedIdentities }}</div>
+                            <div class="stat-value">{{ summary.completedIdentities }}</div>
                           </div>
                           <div class="stat-item">
                             <div class="stat-label">Progress</div>
-                            <div class="stat-value" style="color: #1890ff">📊 {{ getProgressPercentage(summary.completedIdentities, summary.totalIdentities) }}%</div>
+                            <div class="stat-value">{{ getProgressPercentage(summary.completedIdentities, summary.totalIdentities) }}%</div>
                           </div>
                         </div>
                       </div>
@@ -127,15 +127,15 @@
                         <div class="stat-row">
                           <div class="stat-item">
                             <div class="stat-label">Total</div>
-                            <div class="stat-value">⚖️ {{ summary.totalDecisions }}</div>
+                            <div class="stat-value">{{ summary.totalDecisions }}</div>
                           </div>
                           <div class="stat-item">
                             <div class="stat-label">Made</div>
-                            <div class="stat-value" style="color: #52c41a">✅ {{ summary.madeDecisions }}</div>
+                            <div class="stat-value">{{ summary.madeDecisions }}</div>
                           </div>
                           <div class="stat-item">
                             <div class="stat-label">Progress</div>
-                            <div class="stat-value" style="color: #1890ff">📊 {{ getProgressPercentage(summary.madeDecisions, summary.totalDecisions) }}%</div>
+                            <div class="stat-value">{{ getProgressPercentage(summary.madeDecisions, summary.totalDecisions) }}%</div>
                           </div>
                         </div>
                       </div>
@@ -146,15 +146,15 @@
                         <div class="stat-row">
                           <div class="stat-item">
                             <div class="stat-label">Staged</div>
-                            <div class="stat-value" style="color: #722ed1">📋 {{ summary.phaseCounts.staged }}</div>
+                            <div class="stat-value">{{ summary.phaseCounts.staged }}</div>
                           </div>
                           <div class="stat-item">
                             <div class="stat-label">Active</div>
-                            <div class="stat-value" style="color: #fa8c16">🔄 {{ summary.phaseCounts.active }}</div>
+                            <div class="stat-value">{{ summary.phaseCounts.active }}</div>
                           </div>
                           <div class="stat-item">
                             <div class="stat-label">Signed</div>
-                            <div class="stat-value" style="color: #52c41a">✍️ {{ summary.phaseCounts.signed }}</div>
+                            <div class="stat-value">{{ summary.phaseCounts.signed }}</div>
                           </div>
                         </div>
                       </div>
