@@ -576,7 +576,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 
       // Close the initial dialog and show the OAuth dialog
       this.dialog.closeAll();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const dialogRef = this.dialog.open<OAuthDialogComponent, OAuthDialogData>(OAuthDialogComponent, {
         data: {
           title: 'OAuth Authentication',
