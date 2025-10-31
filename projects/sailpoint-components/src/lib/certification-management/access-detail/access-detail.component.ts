@@ -1,5 +1,7 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { NavigationStackService } from '../navigation-stack/navigation-stack.service';
 import { Subscription } from 'rxjs';
 
@@ -112,7 +114,7 @@ interface AccessReviewItem {
 @Component({
   selector: 'app-access-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule, MatButtonModule],
   templateUrl: './access-detail.component.html',
   styleUrls: ['./access-detail.component.scss'],
 })

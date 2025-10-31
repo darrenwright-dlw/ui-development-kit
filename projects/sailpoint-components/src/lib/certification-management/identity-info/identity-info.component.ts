@@ -78,7 +78,7 @@ export class IdentityInfoComponent implements OnInit, OnDestroy {
     this.subscriptions.push(stackSubscription);
   }
 
-  private async loadIdentity(): Promise<void> {
+  async loadIdentity(): Promise<void> {
     console.log('loadIdentity called with identityId:', this.identityId);
 
     if (!this.identityId) {
