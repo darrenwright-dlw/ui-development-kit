@@ -484,7 +484,9 @@ export class CronicleComponent implements OnInit {
     // Build filters for listSources
     // Sources supports `id in`, `name in`, etc. Using IDs avoids name collisions.
     if (ids.length) {
-      const quoted = ids.map(id => `"${id.replace(/"/g, '\\"')}"`).join(',');
+      const quoted = ids
+        .map(id => `"${id.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`)
+        .join(',');
       this.currentFilters = `id in (${quoted})`;
     } else {
       this.currentFilters = ''; // clear filter
