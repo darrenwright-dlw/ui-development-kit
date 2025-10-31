@@ -281,7 +281,8 @@ export class CronicleComponent implements OnInit {
     this.loading = true;
     try {
       // Escape quotes for the filter expression
-      const escaped = query.replace(/"/g, '\\"');
+      // Escape backslashes first, then double quotes, to prevent malformed escaping
+      const escaped = query.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
       // Build a Standard Collection Parameters filter string for Sources.
       // Supported fields include: name (co, eq, in, sw), type (eq, in),
