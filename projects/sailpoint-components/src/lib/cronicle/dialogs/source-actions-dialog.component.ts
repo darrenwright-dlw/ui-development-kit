@@ -192,7 +192,7 @@ export class SourceActionsDialogComponent implements OnInit {
 
         // Generic Quartz humanization via cronstrue
         try {
-            const text = cronstrue.toString(expr, {
+            const text: string = cronstrue.toString(expr, {
                 use24HourTimeFormat: !!opts?.use24Hour,
                 verbose: false,
                 dayOfWeekStartIndexZero: false // Quartz format: 1=Sunday, 2=Monday, ..., 7=Saturday

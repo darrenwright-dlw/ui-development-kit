@@ -16,10 +16,11 @@
     "lib": [
       "es2020",
       "dom"
-    ],
+    ]
   },
   "include": [
-    "app/**/*.ts"
+    "app/**/*.ts",
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",
