@@ -106,7 +106,11 @@ export class WebAuthComponent implements OnInit {
         withCredentials: true
       }).toPromise();
 
-      return data!.csrfToken;
+      if (!data) {
+        throw new Error('No CSRF token received');
+      }
+
+      return data.csrfToken;
     } catch (error) {
       console.error('Error fetching CSRF token:', error);
       throw error;
