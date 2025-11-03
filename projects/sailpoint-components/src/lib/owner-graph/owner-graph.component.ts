@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -52,7 +52,7 @@ type IdentityRow = {
   templateUrl: './owner-graph.component.html',
   styleUrl: './owner-graph.component.scss'
 })
-export class OwnerGraphComponent implements AfterViewInit {
+export class OwnerGraphComponent {
   title = 'OwnerShip';
   defaultOwnerUsername = 'tyler.mairose';
 
@@ -159,15 +159,11 @@ export class OwnerGraphComponent implements AfterViewInit {
 
   constructor(private svc: OwnerGraphService, private cdr: ChangeDetectorRef) {
     // Load top owners on component initialization
-    this.loadTopOwners();
+    void this.loadTopOwners();
   }
 
 
   // Color scheme method removed - using Material Design colors in cards
-
-  ngAfterViewInit() {
-    // Graph methods removed - using card-based UI
-  }
 
   /** Track by function for mat-table performance */
   trackById(_index: number, item: IdentityRow): string {
@@ -231,7 +227,6 @@ export class OwnerGraphComponent implements AfterViewInit {
       }
 
       // Use real role/access profile names if available from existing data
-      const currentOwners = this.ownershipData.data;
       const realRoleNames = ['Sales Associate', 'Product Developer I', 'Treasury Analyst', 'QA Analyst'];
       const realAPNames = ['Sales Floor Access', 'Engineering', 'Finance', 'Quality Assurance'];
 
@@ -297,7 +292,7 @@ export class OwnerGraphComponent implements AfterViewInit {
 
     try {
       const owner = await this.svc.findIdentityByAlias(alias);
-      await this.explore({ id: owner.id, displayName: owner.displayName });
+      await this.explore({ id: owner.id as string, displayName: owner.displayName as string });
     } catch (e: any) {
       this.error = e?.message ?? String(e);
     } finally {
@@ -421,7 +416,7 @@ export class OwnerGraphComponent implements AfterViewInit {
     if (role?.membership?.criteria) {
       // If it's a string, return it directly
       if (typeof role.membership.criteria === 'string') {
-        return role.membership.criteria;
+        return role.membership.criteria as string;
       }
       // If it's an object, try to format it nicely
       if (typeof role.membership.criteria === 'object') {
@@ -496,7 +491,7 @@ export class OwnerGraphComponent implements AfterViewInit {
     }, 500);
   }
 
-  private searchTimeout: any;
+  private searchTimeout?: ReturnType<typeof setTimeout>;
 
   /** Sort ownership table data */
   sortOwnershipData(sort: Sort) {
@@ -506,20 +501,20 @@ export class OwnerGraphComponent implements AfterViewInit {
       return;
     }
 
-    this.ownershipData.data = data.sort((a, b) => {
+    this.ownershipData.data = data.sort((a: any, b: any) => {
       const isAsc = sort.direction === 'asc';
 
       switch (sort.active) {
         case 'displayName':
-          return this.compare(a.displayName, b.displayName, isAsc);
+          return this.compare(a.displayName as string, b.displayName as string, isAsc);
         case 'rolesCount':
-          return this.compare(a.rolesCount, b.rolesCount, isAsc);
+          return this.compare(a.rolesCount as number, b.rolesCount as number, isAsc);
         case 'accessProfilesCount':
-          return this.compare(a.accessProfilesCount, b.accessProfilesCount, isAsc);
+          return this.compare(a.accessProfilesCount as number, b.accessProfilesCount as number, isAsc);
         case 'entitlementsCount':
-          return this.compare(a.entitlementsCount, b.entitlementsCount, isAsc);
+          return this.compare(a.entitlementsCount as number, b.entitlementsCount as number, isAsc);
         case 'totalCount':
-          return this.compare(a.totalCount, b.totalCount, isAsc);
+          return this.compare(a.totalCount as number, b.totalCount as number, isAsc);
         default:
           return 0;
       }
@@ -534,15 +529,15 @@ export class OwnerGraphComponent implements AfterViewInit {
   /** Explore ownership for a specific identity from the summary table */
   exploreFromSummary(row: any) {
     const identity: IdentityRow = {
-      id: row.id,
-      displayName: row.displayName
+      id: row.id as string,
+      displayName: row.displayName as string
     };
     void this.explore(identity);
   }
 
   /** Track function for ownership table performance */
   trackByOwnershipId(_index: number, item: any): string {
-    return item.id;
+    return item.id as string;
   }
 
   /** Get display name for selected identity */
@@ -597,20 +592,20 @@ export class OwnerGraphComponent implements AfterViewInit {
 
   /** Transfer ownership from summary table */
   async transferOwnership(row: any) {
-    console.log('NEW transferOwnership method called for:', row.displayName);
+    console.log('NEW transferOwnership method called for:', row.displayName as string);
 
     try {
       this.loading = true;
 
       // Load the full ownership data for this identity
-      const ownershipData = await this.svc.loadOwnedByUsername(row.displayName);
+      const ownershipData = await this.svc.loadOwnedByUsername(row.displayName as string);
       console.log('Bulk transfer - loaded data:', ownershipData);
 
       // Set up transfer state
       this.selected = {
         id: ownershipData.ownerId,
-        displayName: row.displayName,
-        lifecycleState: row.lifecycleState
+        displayName: row.displayName as string,
+        lifecycleState: row.lifecycleState as string
       };
 
       this.ownedRoles = ownershipData.roles;
@@ -646,7 +641,7 @@ export class OwnerGraphComponent implements AfterViewInit {
 
     } catch (error) {
       console.error('Error loading ownership data for transfer:', error);
-      alert(`Failed to load ownership data for ${row.displayName}. Please try again.`);
+      alert(`Failed to load ownership data for ${row.displayName as string}. Please try again.`);
     } finally {
       this.loading = false;
     }
@@ -749,23 +744,23 @@ export class OwnerGraphComponent implements AfterViewInit {
   /** Check if access profile is in highlighted role */
   isApInRole(apId: string): boolean {
     if (!this.highlightedRoleComposition) return false;
-    return this.highlightedRoleComposition.accessProfiles?.some((ap: any) => ap.id === apId) || false;
+    return this.highlightedRoleComposition.accessProfiles?.some((ap: any) => (ap.id as string) === apId) || false;
   }
 
   /** Check if entitlement is in highlighted role */
   isEntInRole(entId: string): boolean {
     if (!this.highlightedRoleComposition) return false;
-    return this.highlightedRoleComposition.entitlements?.some((ent: any) => ent.id === entId) || false;
+    return this.highlightedRoleComposition.entitlements?.some((ent: any) => (ent.id as string) === entId) || false;
   }
 
   /** Check if entitlement is in highlighted access profile */
   isEntInAp(entId: string): boolean {
     if (!this.highlightedApEntitlements) return false;
-    return this.highlightedApEntitlements.some((ent: any) => ent.id === entId);
+    return this.highlightedApEntitlements.some((ent: any) => (ent.id as string) === entId);
   }
 
   /** Get role composition summary for display */
-  getRoleCompositionSummary(role: any): string {
+  getRoleCompositionSummary(_role: any): string {
     // This would ideally come from cached composition data
     // For now, return a simple summary
     return '';
@@ -774,7 +769,7 @@ export class OwnerGraphComponent implements AfterViewInit {
   /** Fetch role composition data */
   private async fetchRoleComposition(role: any) {
     try {
-      this.roleComposition = await this.svc.getRoleComposition(role.id);
+      this.roleComposition = await this.svc.getRoleComposition(role.id as string);
 
       // Debug: Log access profile structure to see available properties
       if (this.roleComposition?.accessProfiles?.length > 0) {
@@ -784,13 +779,13 @@ export class OwnerGraphComponent implements AfterViewInit {
       // Pre-fetch entitlements for access profiles in the composition
       if (this.roleComposition?.accessProfiles) {
         for (const ap of this.roleComposition.accessProfiles) {
-          if (ap.id && !this.accessProfileEntitlementsMap.has(ap.id)) {
+          if (ap.id && !this.accessProfileEntitlementsMap.has(ap.id as string)) {
             try {
-              const entitlements = await this.svc.getAccessProfileEntitlements(ap.id);
-              this.accessProfileEntitlementsMap.set(ap.id, entitlements || []);
+              const entitlements = await this.svc.getAccessProfileEntitlements(ap.id as string);
+              this.accessProfileEntitlementsMap.set(ap.id as string, entitlements || []);
             } catch (error) {
-              console.warn(`Could not fetch entitlements for access profile ${ap.name}:`, error);
-              this.accessProfileEntitlementsMap.set(ap.id, []);
+              console.warn(`Could not fetch entitlements for access profile ${ap.name as string}:`, error);
+              this.accessProfileEntitlementsMap.set(ap.id as string, []);
             }
           }
         }
@@ -804,7 +799,7 @@ export class OwnerGraphComponent implements AfterViewInit {
   accessProfileEntitlements: any[] = [];
   private async fetchAccessProfileEntitlements(ap: any) {
     try {
-      this.accessProfileEntitlements = await this.svc.getAccessProfileEntitlements(ap.id);
+      this.accessProfileEntitlements = await this.svc.getAccessProfileEntitlements(ap.id as string);
     } catch (error) {
       console.warn('Could not fetch access profile entitlements:', error);
     }
@@ -813,7 +808,7 @@ export class OwnerGraphComponent implements AfterViewInit {
   /** Fetch full entitlement details */
   private async fetchFullEntitlementDetails(ent: any) {
     try {
-      const fullDetails = await this.svc.getEntitlementDetails(ent.id);
+      const fullDetails = await this.svc.getEntitlementDetails(ent.id as string);
       this.selectedEntitlement = fullDetails;
     } catch (error) {
       console.warn('Could not fetch full entitlement details:', error);
@@ -823,15 +818,15 @@ export class OwnerGraphComponent implements AfterViewInit {
 
   // TrackBy functions for performance
   trackByRoleId(_index: number, role: any): string {
-    return role.id;
+    return role.id as string;
   }
 
   trackByApId(_index: number, ap: any): string {
-    return ap.id;
+    return ap.id as string;
   }
 
   trackByEntId(_index: number, ent: any): string {
-    return ent.id;
+    return ent.id as string;
   }
 
   // Side Panel Methods
