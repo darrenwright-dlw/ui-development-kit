@@ -432,9 +432,9 @@ export class OwnerGraphComponent {
       return [];
     }
 
-    return [...accessProfiles].sort((a, b) => {
-      const nameA = (a.name || '').toLowerCase();
-      const nameB = (b.name || '').toLowerCase();
+    return [...accessProfiles].sort((a: any, b: any) => {
+      const nameA = String(a.name || '').toLowerCase();
+      const nameB = String(b.name || '').toLowerCase();
       return nameA.localeCompare(nameB);
     });
   }
@@ -933,11 +933,10 @@ export class OwnerGraphComponent {
     const totalCount = allSelected.roles.length + allSelected.accessProfiles.length + allSelected.entitlements.length;
 
     // Create a flat array of all objects with type info
-    const allObjects = [
-      ...allSelected.roles.map((obj: any) => ({ ...obj, _type: 'role' })),
-      ...allSelected.accessProfiles.map((obj: any) => ({ ...obj, _type: 'accessProfile' })),
-      ...allSelected.entitlements.map((obj: any) => ({ ...obj, _type: 'entitlement' }))
-    ];
+    const allObjects: Array<{obj: any, _type: string}> = [];
+    allSelected.roles.forEach((obj: any) => allObjects.push({ obj, _type: 'role' }));
+    allSelected.accessProfiles.forEach((obj: any) => allObjects.push({ obj, _type: 'accessProfile' }));
+    allSelected.entitlements.forEach((obj: any) => allObjects.push({ obj, _type: 'entitlement' }));
 
     const totalPages = Math.ceil(totalCount / this.transferPageSize);
     const startIndex = this.transferCurrentPage * this.transferPageSize;
@@ -946,18 +945,9 @@ export class OwnerGraphComponent {
 
     // Separate back into types for display
     const result = {
-      roles: currentPageObjects.filter((obj: any) => obj._type === 'role').map((obj: any) => {
-        const { _type, ...rest } = obj;
-        return rest;
-      }),
-      accessProfiles: currentPageObjects.filter((obj: any) => obj._type === 'accessProfile').map((obj: any) => {
-        const { _type, ...rest } = obj;
-        return rest;
-      }),
-      entitlements: currentPageObjects.filter((obj: any) => obj._type === 'entitlement').map((obj: any) => {
-        const { _type, ...rest } = obj;
-        return rest;
-      }),
+      roles: currentPageObjects.filter(item => item._type === 'role').map(item => item.obj),
+      accessProfiles: currentPageObjects.filter(item => item._type === 'accessProfile').map(item => item.obj),
+      entitlements: currentPageObjects.filter(item => item._type === 'entitlement').map(item => item.obj),
       hasMore: totalCount > this.transferPageSize,
       totalCount,
       currentPage: this.transferCurrentPage,
@@ -1129,12 +1119,12 @@ export class OwnerGraphComponent {
         for (const [objectId, newOwner] of this.individualOwners) {
           const [type, id] = objectId.split(':');
 
-          if (type === 'role') {
-            transfers.push(this.svc.transferRoleOwnership([id as string], newOwner.id as string));
-          } else if (type === 'ap') {
-            transfers.push(this.svc.transferAccessProfileOwnership([id as string], newOwner.id as string));
-          } else if (type === 'ent') {
-            transfers.push(this.svc.transferEntitlementOwnership([id as string], newOwner.id as string));
+          if (type === 'role' && id) {
+            transfers.push(this.svc.transferRoleOwnership([id], newOwner.id as string));
+          } else if (type === 'ap' && id) {
+            transfers.push(this.svc.transferAccessProfileOwnership([id], newOwner.id as string));
+          } else if (type === 'ent' && id) {
+            transfers.push(this.svc.transferEntitlementOwnership([id], newOwner.id as string));
           }
         }
 
@@ -1235,7 +1225,8 @@ export class OwnerGraphComponent {
 
       // Combine results
       results.forEach((result: any) => {
-        pendingRequests.push(...(result.requests as any[]));
+        const requests = result.requests as any[];
+        requests.forEach(req => pendingRequests.push(req));
         (result.approvers as Map<any, any>).forEach((value: any, key: any) => approverInfo.set(key as string, value));
       });
 

@@ -218,12 +218,12 @@ async findIdentityByAlias(alias: string) {
         accessProfiles.map(async (ap: any) => {
           try {
             if (ap.id) {
-              const fullDetails = await this.getAccessProfileDetails(ap.id as string);
+              const fullDetails = await this.getAccessProfileDetails(String(ap.id));
               return { ...ap, ...fullDetails };
             }
             return ap;
           } catch (error) {
-            console.warn(`Could not fetch details for access profile ${ap.name as string}:`, error);
+            console.warn(`Could not fetch details for access profile ${String(ap.name)}:`, error);
             return ap;
           }
         })
@@ -417,7 +417,7 @@ async findIdentityByAlias(alias: string) {
         console.log('Craig Hart found in search results:', craigHart);
       } else {
         console.log('Craig Hart NOT found in search results');
-        console.log('All displayNames found:', identities.map((i: any) => i.displayName || i.name));
+        console.log('All displayNames found:', identities.map((i: any) => (i.displayName || i.name) as string));
       }
 
       // Step 2: Get all objects (roles, access profiles, entitlements) in parallel
@@ -438,7 +438,7 @@ async findIdentityByAlias(alias: string) {
       // Initialize counts for all non-active identities
       for (const identity of identities) {
         if (identity.id) {
-          ownershipCounts.set(identity.id as string, { rolesCount: 0, accessProfilesCount: 0, entitlementsCount: 0 });
+          ownershipCounts.set(identity.id, { rolesCount: 0, accessProfilesCount: 0, entitlementsCount: 0 });
         }
       }
 
@@ -469,7 +469,7 @@ async findIdentityByAlias(alias: string) {
       // Step 4: Build results for identities with ownership only
       const results = identities
         .map((identity: any) => {
-          const counts = ownershipCounts.get(identity.id);
+          const counts = ownershipCounts.get(identity.id as string);
           if (!counts) return null;
 
           const totalCount = counts.rolesCount + counts.accessProfilesCount + counts.entitlementsCount;
@@ -566,7 +566,7 @@ async findIdentityByAlias(alias: string) {
           if (existing) {
             existing.count++;
           } else {
-            ownerCounts.set(ownerId as string, {
+            ownerCounts.set(ownerId, {
               owner: item.owner,
               count: 1
             });
@@ -710,7 +710,7 @@ async findIdentityByAlias(alias: string) {
               totalCount,
               _raw: identity
             };
-          } catch (_error) {
+          } catch {
             // Extract job title and department from identity attributes even in error case
             const attributes = identity.attributes || {};
             const jobTitle = attributes.jobTitle || attributes.title || null;
