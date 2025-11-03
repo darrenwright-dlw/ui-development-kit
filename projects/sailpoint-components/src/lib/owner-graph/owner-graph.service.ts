@@ -218,12 +218,12 @@ async findIdentityByAlias(alias: string) {
         accessProfiles.map(async (ap: any) => {
           try {
             if (ap.id) {
-              const fullDetails = await this.getAccessProfileDetails(ap.id);
+              const fullDetails = await this.getAccessProfileDetails(ap.id as string);
               return { ...ap, ...fullDetails };
             }
             return ap;
           } catch (error) {
-            console.warn(`Could not fetch details for access profile ${ap.name}:`, error);
+            console.warn(`Could not fetch details for access profile ${ap.name as string}:`, error);
             return ap;
           }
         })
@@ -299,9 +299,9 @@ async findIdentityByAlias(alias: string) {
       const allOwnerIds = new Set<string>();
       const ownerDisplayNames = new Map<string, string>();
 
-      [...rolesOwners, ...apsOwners, ...entsOwners].forEach(owner => {
-        allOwnerIds.add(owner.id);
-        ownerDisplayNames.set(owner.id, owner.displayName);
+      [...rolesOwners, ...apsOwners, ...entsOwners].forEach((owner: any) => {
+        allOwnerIds.add(owner.id as string);
+        ownerDisplayNames.set(owner.id as string, owner.displayName as string);
       });
 
       console.log(`Found ${allOwnerIds.size} unique owners, getting accurate counts...`);
@@ -432,36 +432,36 @@ async findIdentityByAlias(alias: string) {
       console.log(`Loaded ${allRoles.length} roles, ${allAccessProfiles.length} access profiles, ${allEntitlements.length} entitlements`);
 
       // Step 3: Create ownership counts map for non-active identities only
-      const nonActiveIdSet = new Set(identities.map((i: any) => i.id));
+      const nonActiveIdSet = new Set(identities.map((i: any) => i.id as string));
       const ownershipCounts = new Map<string, { rolesCount: number; accessProfilesCount: number; entitlementsCount: number }>();
 
       // Initialize counts for all non-active identities
       for (const identity of identities) {
         if (identity.id) {
-          ownershipCounts.set(identity.id, { rolesCount: 0, accessProfilesCount: 0, entitlementsCount: 0 });
+          ownershipCounts.set(identity.id as string, { rolesCount: 0, accessProfilesCount: 0, entitlementsCount: 0 });
         }
       }
 
       // Count roles owned by non-active identities
       allRoles.forEach((role: any) => {
-        if (role.owner?.id && nonActiveIdSet.has(role.owner.id)) {
-          const counts = ownershipCounts.get(role.owner.id);
+        if (role.owner?.id && nonActiveIdSet.has(role.owner.id as string)) {
+          const counts = ownershipCounts.get(role.owner.id as string);
           if (counts) counts.rolesCount++;
         }
       });
 
       // Count access profiles owned by non-active identities
       allAccessProfiles.forEach((ap: any) => {
-        if (ap.owner?.id && nonActiveIdSet.has(ap.owner.id)) {
-          const counts = ownershipCounts.get(ap.owner.id);
+        if (ap.owner?.id && nonActiveIdSet.has(ap.owner.id as string)) {
+          const counts = ownershipCounts.get(ap.owner.id as string);
           if (counts) counts.accessProfilesCount++;
         }
       });
 
       // Count entitlements owned by non-active identities
       allEntitlements.forEach((ent: any) => {
-        if (ent.owner?.id && nonActiveIdSet.has(ent.owner.id)) {
-          const counts = ownershipCounts.get(ent.owner.id);
+        if (ent.owner?.id && nonActiveIdSet.has(ent.owner.id as string)) {
+          const counts = ownershipCounts.get(ent.owner.id as string);
           if (counts) counts.entitlementsCount++;
         }
       });
@@ -560,13 +560,13 @@ async findIdentityByAlias(alias: string) {
 
       response.data.forEach((item: any) => {
         if (item.owner && item.owner.id) {
-          const ownerId = item.owner.id;
+          const ownerId = item.owner.id as string;
           const existing = ownerCounts.get(ownerId);
 
           if (existing) {
             existing.count++;
           } else {
-            ownerCounts.set(ownerId, {
+            ownerCounts.set(ownerId as string, {
               owner: item.owner,
               count: 1
             });
@@ -621,12 +621,12 @@ async findIdentityByAlias(alias: string) {
   private extractCount(response: any): number {
     // Check if count is in headers (X-Total-Count)
     if (response.headers && response.headers['x-total-count']) {
-      return parseInt(response.headers['x-total-count'], 10) || 0;
+      return parseInt(response.headers['x-total-count'] as string, 10) || 0;
     }
 
     // Check if count is in response data
     if (response.data && Array.isArray(response.data)) {
-      return response.data.length;
+      return (response.data as any[]).length;
     }
 
     return 0;
@@ -673,9 +673,9 @@ async findIdentityByAlias(alias: string) {
           try {
             // Get basic counts (simplified for speed)
             const [rolesCount, apsCount, entsCount] = await Promise.all([
-              this.getOwnershipCount('roles', ownerId),
-              this.getOwnershipCount('accessProfiles', ownerId),
-              this.getOwnershipCount('entitlements', ownerId)
+              this.getOwnershipCount('roles', ownerId as string),
+              this.getOwnershipCount('accessProfiles', ownerId as string),
+              this.getOwnershipCount('entitlements', ownerId as string)
             ]);
 
             const totalCount = rolesCount + apsCount + entsCount;
@@ -710,7 +710,7 @@ async findIdentityByAlias(alias: string) {
               totalCount,
               _raw: identity
             };
-          } catch (error) {
+          } catch (_error) {
             // Extract job title and department from identity attributes even in error case
             const attributes = identity.attributes || {};
             const jobTitle = attributes.jobTitle || attributes.title || null;
@@ -1146,7 +1146,7 @@ async findIdentityByAlias(alias: string) {
   /**
    * Update approver configuration for an object
    */
-  async updateObjectApprover(objectId: string, objectType: 'role' | 'accessProfile' | 'entitlement', newApproverId: string): Promise<void> {
+  updateObjectApprover(objectId: string, objectType: 'role' | 'accessProfile' | 'entitlement', newApproverId: string): void {
     try {
       // This would require updating the access request configuration
       // Implementation depends on the specific approval workflow structure

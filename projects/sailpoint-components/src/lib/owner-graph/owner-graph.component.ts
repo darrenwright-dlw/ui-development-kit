@@ -292,7 +292,7 @@ export class OwnerGraphComponent {
 
     try {
       const owner = await this.svc.findIdentityByAlias(alias);
-      await this.explore({ id: owner.id as string, displayName: owner.displayName as string });
+      await this.explore({ id: owner.id, displayName: owner.displayName });
     } catch (e: any) {
       this.error = e?.message ?? String(e);
     } finally {
@@ -744,26 +744,19 @@ export class OwnerGraphComponent {
   /** Check if access profile is in highlighted role */
   isApInRole(apId: string): boolean {
     if (!this.highlightedRoleComposition) return false;
-    return this.highlightedRoleComposition.accessProfiles?.some((ap: any) => (ap.id as string) === apId) || false;
+    return Boolean(this.highlightedRoleComposition.accessProfiles?.some((ap: any) => (ap.id as string) === apId));
   }
 
   /** Check if entitlement is in highlighted role */
   isEntInRole(entId: string): boolean {
     if (!this.highlightedRoleComposition) return false;
-    return this.highlightedRoleComposition.entitlements?.some((ent: any) => (ent.id as string) === entId) || false;
+    return Boolean(this.highlightedRoleComposition.entitlements?.some((ent: any) => (ent.id as string) === entId));
   }
 
   /** Check if entitlement is in highlighted access profile */
   isEntInAp(entId: string): boolean {
     if (!this.highlightedApEntitlements) return false;
     return this.highlightedApEntitlements.some((ent: any) => (ent.id as string) === entId);
-  }
-
-  /** Get role composition summary for display */
-  getRoleCompositionSummary(_role: any): string {
-    // This would ideally come from cached composition data
-    // For now, return a simple summary
-    return '';
   }
 
   /** Fetch role composition data */
@@ -834,11 +827,11 @@ export class OwnerGraphComponent {
   /** Get panel title based on selected object type */
   getPanelTitle(): string {
     if (this.selectedRole) {
-      return this.selectedRole.name || 'Role Details';
+      return (this.selectedRole.name as string) || 'Role Details';
     } else if (this.selectedAccessProfile) {
-      return this.selectedAccessProfile.name || 'Access Profile Details';
+      return (this.selectedAccessProfile.name as string) || 'Access Profile Details';
     } else if (this.selectedEntitlement) {
-      return this.selectedEntitlement.name || this.selectedEntitlement.value || 'Entitlement Details';
+      return (this.selectedEntitlement.name as string) || (this.selectedEntitlement.value as string) || 'Entitlement Details';
     }
     return 'Details';
   }
@@ -853,11 +846,11 @@ export class OwnerGraphComponent {
   /** Get drawer title based on selected object type */
   getDrawerTitle(): string {
     if (this.selectedRole) {
-      return this.selectedRole.name || 'Role Details';
+      return (this.selectedRole.name as string) || 'Role Details';
     } else if (this.selectedAccessProfile) {
-      return this.selectedAccessProfile.name || 'Access Profile Details';
+      return (this.selectedAccessProfile.name as string) || 'Access Profile Details';
     } else if (this.selectedEntitlement) {
-      return this.selectedEntitlement.name || this.selectedEntitlement.value || 'Entitlement Details';
+      return (this.selectedEntitlement.name as string) || (this.selectedEntitlement.value as string) || 'Entitlement Details';
     }
     return 'Details';
   }
@@ -872,11 +865,11 @@ export class OwnerGraphComponent {
   /** Get modal title based on selected object type */
   getModalTitle(): string {
     if (this.selectedRole) {
-      return this.selectedRole.name || 'Role Details';
+      return (this.selectedRole.name as string) || 'Role Details';
     } else if (this.selectedAccessProfile) {
-      return this.selectedAccessProfile.name || 'Access Profile Details';
+      return (this.selectedAccessProfile.name as string) || 'Access Profile Details';
     } else if (this.selectedEntitlement) {
-      return this.selectedEntitlement.name || this.selectedEntitlement.value || 'Entitlement Details';
+      return (this.selectedEntitlement.name as string) || (this.selectedEntitlement.value as string) || 'Entitlement Details';
     }
     return 'Details';
   }
@@ -920,7 +913,7 @@ export class OwnerGraphComponent {
     };
 
     for (const [objectId, objectData] of this.selectedObjects) {
-      const [type, id] = objectId.split(':');
+      const [type] = objectId.split(':');
 
       if (type === 'role') {
         result.roles.push(objectData.object);
@@ -953,9 +946,18 @@ export class OwnerGraphComponent {
 
     // Separate back into types for display
     const result = {
-      roles: currentPageObjects.filter(obj => obj._type === 'role').map(obj => ({ ...obj, _type: undefined })),
-      accessProfiles: currentPageObjects.filter(obj => obj._type === 'accessProfile').map(obj => ({ ...obj, _type: undefined })),
-      entitlements: currentPageObjects.filter(obj => obj._type === 'entitlement').map(obj => ({ ...obj, _type: undefined })),
+      roles: currentPageObjects.filter((obj: any) => obj._type === 'role').map((obj: any) => {
+        const { _type, ...rest } = obj;
+        return rest;
+      }),
+      accessProfiles: currentPageObjects.filter((obj: any) => obj._type === 'accessProfile').map((obj: any) => {
+        const { _type, ...rest } = obj;
+        return rest;
+      }),
+      entitlements: currentPageObjects.filter((obj: any) => obj._type === 'entitlement').map((obj: any) => {
+        const { _type, ...rest } = obj;
+        return rest;
+      }),
       hasMore: totalCount > this.transferPageSize,
       totalCount,
       currentPage: this.transferCurrentPage,
@@ -1104,18 +1106,18 @@ export class OwnerGraphComponent {
         const transfers: Promise<void>[] = [];
 
         if (selectedObjs.roles.length > 0) {
-          transfers.push(this.svc.transferRoleOwnership(selectedObjs.roles.map(r => r.id), this.singleNewOwner!.id));
+          transfers.push(this.svc.transferRoleOwnership(selectedObjs.roles.map((r: any) => r.id as string), this.singleNewOwner!.id as string));
         }
         if (selectedObjs.accessProfiles.length > 0) {
-          transfers.push(this.svc.transferAccessProfileOwnership(selectedObjs.accessProfiles.map(ap => ap.id), this.singleNewOwner!.id));
+          transfers.push(this.svc.transferAccessProfileOwnership(selectedObjs.accessProfiles.map((ap: any) => ap.id as string), this.singleNewOwner!.id as string));
         }
         if (selectedObjs.entitlements.length > 0) {
-          transfers.push(this.svc.transferEntitlementOwnership(selectedObjs.entitlements.map(ent => ent.id), this.singleNewOwner!.id));
+          transfers.push(this.svc.transferEntitlementOwnership(selectedObjs.entitlements.map((ent: any) => ent.id as string), this.singleNewOwner!.id as string));
         }
 
         await Promise.all(transfers);
 
-        this.transferSuccessMessage = `Successfully transferred ${this.selectedObjects.size} objects to ${this.singleNewOwner!.displayName || this.singleNewOwner!.name}`;
+        this.transferSuccessMessage = `Successfully transferred ${this.selectedObjects.size} objects to ${(this.singleNewOwner!.displayName || this.singleNewOwner!.name) as string}`;
         this.transferSuccess = true;
 
         // Clear selected objects after successful transfer
@@ -1128,11 +1130,11 @@ export class OwnerGraphComponent {
           const [type, id] = objectId.split(':');
 
           if (type === 'role') {
-            transfers.push(this.svc.transferRoleOwnership([id], newOwner.id));
+            transfers.push(this.svc.transferRoleOwnership([id as string], newOwner.id as string));
           } else if (type === 'ap') {
-            transfers.push(this.svc.transferAccessProfileOwnership([id], newOwner.id));
+            transfers.push(this.svc.transferAccessProfileOwnership([id as string], newOwner.id as string));
           } else if (type === 'ent') {
-            transfers.push(this.svc.transferEntitlementOwnership([id], newOwner.id));
+            transfers.push(this.svc.transferEntitlementOwnership([id as string], newOwner.id as string));
           }
         }
 
@@ -1233,8 +1235,8 @@ export class OwnerGraphComponent {
 
       // Combine results
       results.forEach((result: any) => {
-        pendingRequests.push(...result.requests);
-        result.approvers.forEach((value: any, key: any) => approverInfo.set(key, value));
+        pendingRequests.push(...(result.requests as any[]));
+        (result.approvers as Map<any, any>).forEach((value: any, key: any) => approverInfo.set(key as string, value));
       });
 
       if (pendingRequests.length > 0 || approverInfo.size > 0) {
@@ -1254,7 +1256,7 @@ export class OwnerGraphComponent {
 
   /** Check specific objects for access requests and approver info */
   async checkObjectsForAccessRequests(objects: any[], searchType: 'roles' | 'accessProfiles' | 'entitlements', objectType: 'role' | 'accessProfile' | 'entitlement') {
-    const objectIds = objects.map(obj => obj.id);
+    const objectIds = objects.map((obj: any) => obj.id as string);
     const requests = await this.svc.getPendingAccessRequests(objectIds, searchType);
     const approvers = new Map();
 
@@ -1262,14 +1264,14 @@ export class OwnerGraphComponent {
     for (const obj of objects) {
       const currentOwnerId = this.selected?.id; // The previous owner
       if (currentOwnerId) {
-        const approverStatus = await this.svc.checkApproverStatus(obj.id, objectType, currentOwnerId);
+        const approverStatus = await this.svc.checkApproverStatus(obj.id as string, objectType, currentOwnerId);
         if (approverStatus.isApprover || approverStatus.approvers.length > 0) {
-          approvers.set(obj.id, {
+          approvers.set(obj.id as string, {
             object: obj,
             objectType,
             isOwnerApprover: approverStatus.isApprover,
             approvers: approverStatus.approvers,
-            newOwnerId: this.getNewOwnerForObject(obj.id, objectType)
+            newOwnerId: this.getNewOwnerForObject(obj.id as string, objectType)
           });
         }
       }
@@ -1279,12 +1281,12 @@ export class OwnerGraphComponent {
   }
 
   /** Get the new owner ID for an object based on transfer mode */
-  getNewOwnerForObject(objectId: string, objectType: string): string {
+  getNewOwnerForObject(objectId: string, objectType: string): string | undefined {
     if (this.transferMode === 'same') {
-      return this.singleNewOwner?.id;
+      return this.singleNewOwner?.id as string | undefined;
     } else {
       const objectKey = `${objectType === 'accessProfile' ? 'ap' : objectType === 'entitlement' ? 'ent' : 'role'}:${objectId}`;
-      return this.individualOwners.get(objectKey)?.id;
+      return this.individualOwners.get(objectKey)?.id as string | undefined;
     }
   }
 
@@ -1301,8 +1303,8 @@ export class OwnerGraphComponent {
           );
 
           if (objectRequests.length > 0) {
-            const requestIds = objectRequests.map(req => req.id);
-            const newOwnerId = approverInfo.newOwnerId;
+            const requestIds = objectRequests.map((req: any) => req.id as string);
+            const newOwnerId = approverInfo.newOwnerId as string | undefined;
 
             if (newOwnerId) {
               reassignPromises.push(
@@ -1323,7 +1325,7 @@ export class OwnerGraphComponent {
 
     } catch (error) {
       console.error('Error reassigning access requests:', error);
-      alert(`Failed to reassign access requests: ${error}`);
+      alert(`Failed to reassign access requests: ${String(error)}`);
     }
   }
 
