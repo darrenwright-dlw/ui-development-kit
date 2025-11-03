@@ -155,6 +155,11 @@
         <mat-icon class="card-icon">dashboard</mat-icon>
         Accounts
       </a>
+      <a *ngIf="isComponentEnabled('cronicle')" mat-list-item class="sidebar-link" routerLink="/cronicle" routerLinkActive="active-link"
+        [class.disabled]="!isConnected" (click)="onNavItemClick($event)">
+        <mat-icon class="card-icon">dashboard</mat-icon>
+        Cronicle
+      </a>
 
     </mat-nav-list>
   </mat-sidenav>

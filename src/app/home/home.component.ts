@@ -273,7 +273,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
 
     this.authenticating = true;
-    this.dialog.open(GenericDialogComponent, {
+    this.dialog.open<GenericDialogComponent>(GenericDialogComponent, {
         data: {
           title: `Logging into ISC...`,
           message: "Please wait while we log you into the selected environment.",
@@ -292,7 +292,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
         // Handle OAuth flow if we get UUID back (new authentication needed)
         if (loginResult.success && loginResult.uuid) {
-          this.handleOAuthFlowWithData(loginResult.uuid, loginResult.authUrl);
+          this.handleOAuthFlowWithData(String(loginResult.uuid), loginResult.authUrl ? String(loginResult.authUrl) : undefined);
           return;
         }
 

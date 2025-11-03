@@ -104,6 +104,14 @@ export class ConfigService {
       enabled: false,
     },
     {
+      name: 'cronicle',
+      displayName: 'Cronicle',
+      route: '/cronicle',
+      icon: 'dashboard',
+      description: 'Manage cronicle in SailPoint.',
+      enabled: false
+    },
+    {
       name: 'certification-management',
       displayName: 'Certification Management',
       route: '/certification-management',
