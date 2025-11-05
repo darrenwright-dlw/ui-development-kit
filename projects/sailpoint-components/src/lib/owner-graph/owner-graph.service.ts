@@ -166,7 +166,7 @@ export class OwnerGraphService {
   }
 
 async findIdentityByAlias(alias: string) {
-  const q = alias.replace(/"/g, '\\"');
+  const q = alias.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
   const req: SearchV2025ApiSearchPostRequest = {
     searchV2025: {
