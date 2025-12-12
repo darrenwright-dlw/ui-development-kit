@@ -43,6 +43,54 @@
     </div>
   </section>
 
+  <!-- Search Bar -->
+  <section class="search-section">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search CoLab</mat-label>
+      <input
+        matInput
+        type="search"
+        placeholder="Search by name, tags, or description"
+        [value]="searchTerm"
+        (input)="onSearchChange($any($event.target).value)"
+      />
+      <button *ngIf="searchTerm" mat-icon-button matSuffix aria-label="Clear" (click)="onSearchChange('')">
+        <mat-icon>close</mat-icon>
+      </button>
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+    <div class="search-status" *ngIf="searching">
+      <mat-progress-spinner diameter="24" mode="indeterminate"></mat-progress-spinner>
+      <span>Searching CoLab...</span>
+    </div>
+    <div class="search-error" *ngIf="searchError">{{ searchError }}</div>
+  </section>
+
+  <!-- Search Results -->
+  <section class="search-results" *ngIf="searchTerm.trim().length >= 2">
+    <div class="section-header">
+      <h2 class="section-title">
+        Search results
+        <span class="result-count" *ngIf="searchResults.length">({{ searchResults.length }})</span>
+      </h2>
+    </div>
+
+    <div class="empty-container" *ngIf="!searching && searchResults.length === 0">
+      <mat-icon class="empty-icon">search_off</mat-icon>
+      <p class="empty-text">No matches found for “{{ searchTerm }}”.</p>
+    </div>
+
+    <div class="cards-grid" *ngIf="searchResults.length > 0">
+      <app-colab-card
+        *ngFor="let item of searchResults"
+        [post]="item.post"
+        [category]="item.category"
+        [showDeployButton]="isDeployable(item.category)"
+        (deploy)="onDeploy({ post: item.post, category: item.category })"
+      ></app-colab-card>
+    </div>
+  </section>
+
   <!-- Category Sections -->
   <main class="categories-container">
     <app-colab-section
