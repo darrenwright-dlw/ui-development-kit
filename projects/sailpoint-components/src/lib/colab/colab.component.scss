@@ -109,17 +109,22 @@
 // Deploy Info Banner
 // ============================================
 .deploy-info-banner {
+  max-width: 1400px;
+  margin: 0 auto 40px auto;
+  margin-left: 48px;
+  margin-right: 48px;
+  background: linear-gradient(90deg, rgba(0, 163, 224, 0.08) 0%, rgba(0, 51, 161, 0.08) 100%);
+  border-left: 4px solid #00a3e0;
+
+  ::ng-deep .mat-mdc-card-content {
+    padding: 24px 32px;
+  }
+}
+
+.deploy-info-content-wrapper {
   display: flex;
   align-items: center;
   gap: 20px;
-  max-width: 1400px;
-  margin: 0 auto 40px auto;
-  padding: 24px 32px;
-  background: linear-gradient(90deg, rgba(0, 163, 224, 0.08) 0%, rgba(0, 51, 161, 0.08) 100%);
-  border-radius: 12px;
-  border-left: 4px solid #00a3e0;
-  margin-left: 48px;
-  margin-right: 48px;
 }
 
 .deploy-info-icon {
@@ -139,6 +144,10 @@
   font-size: 18px;
   font-weight: 600;
   color: var(--mat-foreground-text, #1a1a2e);
+
+  ::ng-deep {
+    margin: 0 0 4px 0;
+  }
 }
 
 .deploy-info-text {
@@ -207,8 +216,11 @@
 // ============================================
 .footer-cta {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  padding: 64px 48px;
   margin-top: 40px;
+
+  ::ng-deep .mat-mdc-card-content {
+    padding: 64px 48px;
+  }
 }
 
 .footer-cta-content {
@@ -216,6 +228,9 @@
   margin: 0 auto;
   text-align: center;
   color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .footer-cta-icon {
@@ -230,6 +245,12 @@
   margin: 0 0 12px 0;
   font-size: 28px;
   font-weight: 700;
+  color: white;
+
+  ::ng-deep {
+    margin: 0 0 12px 0;
+    color: white;
+  }
 }
 
 .footer-cta-text {

@@ -9,6 +9,10 @@
   margin-bottom: 24px;
   padding-bottom: 12px;
   border-bottom: 2px solid rgba(0, 51, 161, 0.1);
+
+  ::ng-deep mat-card-title {
+    margin: 0;
+  }
 }
 
 .section-title {

@@ -31,17 +31,19 @@
   </section>
 
   <!-- Deploy Info Banner -->
-  <section class="deploy-info-banner">
-    <mat-icon class="deploy-info-icon">rocket_launch</mat-icon>
-    <div class="deploy-info-content">
-      <h3 class="deploy-info-title">One-Click Deployment</h3>
-      <p class="deploy-info-text">
-        Deploy Workflows, SaaS Connectors, SaaS Connector Customizers, and Transforms 
-        directly to your environment with a single click. Look for the 
-        <strong>Deploy</strong> button on supported items.
-      </p>
-    </div>
-  </section>
+  <mat-card class="deploy-info-banner" appearance="outlined">
+    <mat-card-content class="deploy-info-content-wrapper">
+      <mat-icon class="deploy-info-icon">rocket_launch</mat-icon>
+      <div class="deploy-info-content">
+        <mat-card-title class="deploy-info-title">One-Click Deployment</mat-card-title>
+        <mat-card-subtitle class="deploy-info-text">
+          Deploy Workflows, SaaS Connectors, SaaS Connector Customizers, and Transforms 
+          directly to your environment with a single click. Look for the 
+          <strong>Deploy</strong> button on supported items.
+        </mat-card-subtitle>
+      </div>
+    </mat-card-content>
+  </mat-card>
 
   <!-- Search Bar -->
   <section class="search-section">
@@ -104,14 +106,14 @@
   </main>
 
   <!-- Footer CTA -->
-  <section class="footer-cta">
-    <div class="footer-cta-content">
+  <mat-card class="footer-cta" appearance="outlined">
+    <mat-card-content class="footer-cta-content">
       <mat-icon class="footer-cta-icon">groups</mat-icon>
-      <h2 class="footer-cta-title">Want to Contribute?</h2>
-      <p class="footer-cta-text">
+      <mat-card-title class="footer-cta-title">Want to Contribute?</mat-card-title>
+      <mat-card-subtitle class="footer-cta-text">
         Share your own solutions with the SailPoint developer community. 
         Your contributions help others build better identity solutions.
-      </p>
+      </mat-card-subtitle>
       <a 
         href="https://developer.sailpoint.com/discuss/t/about-the-sailpoint-developer-community-colab/11230" 
         target="_blank"
@@ -122,6 +124,6 @@
         Learn How to Contribute
         <mat-icon>open_in_new</mat-icon>
       </a>
-    </div>
-  </section>
+    </mat-card-content>
+  </mat-card>
 </div>

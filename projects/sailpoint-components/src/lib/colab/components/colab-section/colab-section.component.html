@@ -1,13 +1,13 @@
-<section class="colab-section">
-  <div class="section-header">
-    <h2 class="section-title">{{ category.title }}</h2>
+<mat-card class="colab-section" appearance="outlined">
+  <mat-card-header class="section-header">
+    <mat-card-title class="section-title">{{ category.title }}</mat-card-title>
     <button mat-button class="view-all-link" (click)="onViewAll()">
       {{ expanded ? 'Show Less' : 'View All' }}
       <mat-icon>{{ expanded ? 'expand_less' : 'arrow_forward' }}</mat-icon>
     </button>
-  </div>
+  </mat-card-header>
 
-  <div class="section-content">
+  <mat-card-content class="section-content">
     <!-- Loading State -->
     <div class="loading-container" *ngIf="loading">
       <mat-spinner diameter="40"></mat-spinner>
@@ -31,9 +31,12 @@
       <a 
         href="https://developer.sailpoint.com/discuss/t/about-the-sailpoint-developer-community-colab/11230" 
         target="_blank"
+        mat-button
+        color="primary"
         class="contribute-link"
       >
-        Be the first to contribute! →
+        Be the first to contribute!
+        <mat-icon>arrow_forward</mat-icon>
       </a>
     </div>
 
@@ -48,8 +51,8 @@
         (deploy)="onDeploy($event)"
       ></app-colab-card>
     </div>
-  </div>
-</section>
+  </mat-card-content>
+</mat-card>
 
 
 

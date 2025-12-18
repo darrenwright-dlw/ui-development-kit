@@ -188,6 +188,134 @@ projects/sailpoint-components/src/lib/
 
 ---
 
+## Component Development Guidelines
+
+### Use Angular Material for All Components
+
+**CRITICAL:** When creating new Angular components, you MUST use Angular Material components wherever possible instead of custom HTML elements or other UI libraries.
+
+#### Required Angular Material Modules
+
+Always import the necessary Angular Material modules in your component's `imports` array:
+
+```typescript
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTableModule } from '@angular/material/table';
+// ... and other Material modules as needed
+
+@Component({
+  selector: 'app-my-component',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatCardModule,
+    MatIconModule,
+    // ... other Material modules
+  ],
+  templateUrl: './my-component.html',
+  styleUrl: './my-component.scss'
+})
+```
+
+#### Angular Material Component Usage
+
+**Use Material components instead of native HTML:**
+
+✅ **DO:**
+- `<button mat-raised-button>` instead of `<button>`
+- `<mat-card>` instead of `<div class="card">`
+- `<mat-icon>` instead of `<i>` or `<span>`
+- `<mat-form-field>` with `<input matInput>` instead of plain `<input>`
+- `<mat-spinner>` instead of custom loading spinners
+- `<mat-toolbar>` instead of `<header>` or `<nav>`
+- `<mat-snack-bar>` for notifications
+- `<mat-dialog>` for modals
+
+❌ **DON'T:**
+- Use plain HTML buttons, inputs, or form elements
+- Create custom card/container components when `mat-card` exists
+- Use third-party UI libraries (Bootstrap, PrimeNG, etc.) without justification
+- Mix Material with other UI frameworks
+
+#### Examples
+
+**Buttons:**
+```html
+<!-- ✅ Correct -->
+<button mat-raised-button color="primary">Submit</button>
+<button mat-button>Cancel</button>
+<button mat-icon-button><mat-icon>delete</mat-icon></button>
+
+<!-- ❌ Incorrect -->
+<button class="btn btn-primary">Submit</button>
+```
+
+**Forms:**
+```html
+<!-- ✅ Correct -->
+<mat-form-field>
+  <mat-label>Email</mat-label>
+  <input matInput type="email" [(ngModel)]="email">
+  <mat-error>Invalid email</mat-error>
+</mat-form-field>
+
+<!-- ❌ Incorrect -->
+<input type="email" [(ngModel)]="email" class="form-control">
+```
+
+**Cards:**
+```html
+<!-- ✅ Correct -->
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Title</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>Content</mat-card-content>
+  <mat-card-actions>
+    <button mat-button>Action</button>
+  </mat-card-actions>
+</mat-card>
+
+<!-- ❌ Incorrect -->
+<div class="card">
+  <div class="card-header">Title</div>
+  <div class="card-body">Content</div>
+</div>
+```
+
+**Loading States:**
+```html
+<!-- ✅ Correct -->
+<mat-spinner diameter="40" *ngIf="loading"></mat-spinner>
+
+<!-- ❌ Incorrect -->
+<div class="spinner" *ngIf="loading"></div>
+```
+
+#### When Material Components Are Not Available
+
+If you need functionality that Angular Material doesn't provide:
+
+1. **Check Material Extensions** - Look for `@angular/material` extensions or community packages
+2. **Use Material Design Principles** - Style custom components to match Material Design guidelines
+3. **Document the Exception** - Add a comment explaining why a Material component wasn't used
+
+#### Theming
+
+All Material components automatically respect the app's theme configuration. Use Material's theming system rather than custom CSS for colors, spacing, and typography when possible.
+
+---
+
 ## Security Considerations
 
 1. **Never expose Node.js APIs directly** - Always use the IPC pattern
@@ -213,11 +341,17 @@ projects/sailpoint-components/src/lib/
 ❌ **Don't** use inconsistent naming between handler and preload
 ❌ **Don't** forget error handling in async operations
 ❌ **Don't** expose sensitive data in error messages
+❌ **Don't** use plain HTML elements when Angular Material equivalents exist
+❌ **Don't** mix Angular Material with other UI frameworks (Bootstrap, PrimeNG, etc.)
+❌ **Don't** create custom components for functionality Material already provides
 
 ✅ **Do** follow the 5-step pattern consistently
 ✅ **Do** use TypeScript types for all parameters and returns
 ✅ **Do** handle errors gracefully with informative messages
 ✅ **Do** test both Electron and Web modes if supporting both
+✅ **Do** use Angular Material components for all UI elements where possible
+✅ **Do** import Material modules in the component's `imports` array
+✅ **Do** follow Material Design principles for custom styling
 
 ---
 

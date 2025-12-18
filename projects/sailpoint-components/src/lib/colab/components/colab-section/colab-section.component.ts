@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject, takeUntil } from 'rxjs';
@@ -25,6 +26,7 @@ export interface CategoryDisplay {
   imports: [
     CommonModule,
     MatButtonModule,
+    MatCardModule,
     MatIconModule,
     MatProgressSpinnerModule,
     ColabCardComponent
