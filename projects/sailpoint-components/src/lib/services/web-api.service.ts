@@ -41,9 +41,7 @@ export interface ElectronAPIInterface {
   getGitHubReleaseArtifact: (githubRepoUrl: string) => Promise<GitHubReleaseArtifactResponse>;
 
   // Connector deployment
-  createConnector: (connectorAlias: string) => Promise<ConnectorDeploymentResponse>;
-  uploadConnector: (connectorId: string, zipFilePath: string) => Promise<ConnectorDeploymentResponse>;
-  downloadFile: (url: string, outputPath: string) => Promise<{ success: boolean; error?: string }>;
+  uploadConnector: (githubRepoUrl: string, connectorAlias?: string) => Promise<ConnectorDeploymentResponse>;
   
   // SailPoint SDK functions
   // These are dynamically added and would need to be proxied through the web service
@@ -659,30 +657,12 @@ export class WebApiService implements ElectronAPIInterface, OnDestroy {
   }
 
   // Connector deployment
-  async createConnector(connectorAlias: string): Promise<ConnectorDeploymentResponse> {
+  async uploadConnector(githubRepoUrl: string, connectorAlias?: string): Promise<ConnectorDeploymentResponse> {
     // Note: This would need to be proxied through the backend server
     // For now, return an error indicating this is not available in web mode
     return {
       success: false,
       error: 'Connector deployment is only available in Electron mode'
-    };
-  }
-
-  async uploadConnector(connectorId: string, zipFilePath: string): Promise<ConnectorDeploymentResponse> {
-    // Note: This would need to be proxied through the backend server
-    // For now, return an error indicating this is not available in web mode
-    return {
-      success: false,
-      error: 'Connector deployment is only available in Electron mode'
-    };
-  }
-
-  async downloadFile(url: string, outputPath: string): Promise<{ success: boolean; error?: string }> {
-    // Note: File system access is not available in web mode
-    // For now, return an error indicating this is not available in web mode
-    return {
-      success: false,
-      error: 'File download is only available in Electron mode'
     };
   }
 

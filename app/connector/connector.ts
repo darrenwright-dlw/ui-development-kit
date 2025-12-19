@@ -9,6 +9,7 @@ import { getConfigEnvironment, getConfig } from '../authentication/config';
 import { getStoredOAuthTokens } from '../authentication/oauth';
 import { getStoredPATTokens } from '../authentication/pat';
 import { getActiveEnvironment } from '../authentication/auth';
+import { getGitHubReleaseArtifact } from '../github/github';
 
 export interface CreateConnectorRequest {
   alias: string;
@@ -30,6 +31,159 @@ export interface ConnectorDeploymentResponse {
   connectorId?: string;
   version?: number;
   error?: string;
+}
+
+/**
+ * Upload a connector from a GitHub repository URL
+ * This function handles the complete deployment flow:
+ * 1. Fetches the latest release artifact from GitHub
+ * 2. Downloads the zip file
+ * 3. Creates the connector
+ * 4. Uploads the connector zip file
+ */
+export async function uploadConnectorFromGitHub(
+  githubRepoUrl: string,
+  connectorAlias?: string
+): Promise<ConnectorDeploymentResponse> {
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+  let tempFilePath: string | null = null;
+
+  try {
+    // Get the active environment that was set during login
+    const environment = getActiveEnvironment();
+    if (!environment) {
+      return {
+        success: false,
+        error: 'No active environment found. Please log in to an environment first.'
+      };
+    }
+
+    // Step 1: Fetch the latest release artifact from GitHub
+    console.log(`Fetching release artifact from GitHub: ${githubRepoUrl}`);
+    const artifactResponse = await getGitHubReleaseArtifact(githubRepoUrl);
+    
+    if (!artifactResponse.success || !artifactResponse.downloadUrl) {
+      return {
+        success: false,
+        error: artifactResponse.error || 'Failed to fetch GitHub release artifact'
+      };
+    }
+
+    console.log(`Found release artifact: ${artifactResponse.filename} (${artifactResponse.tagName})`);
+
+    // Step 2: Download the zip file to a temporary location
+    if (!artifactResponse.downloadUrl) {
+      return {
+        success: false,
+        error: 'No download URL found in release artifact'
+      };
+    }
+
+    const tempDir = os.tmpdir();
+    tempFilePath = path.join(tempDir, artifactResponse.filename || 'connector.zip');
+    
+    if (!tempFilePath) {
+      return {
+        success: false,
+        error: 'Failed to generate temporary file path'
+      };
+    }
+    
+    console.log(`Downloading file from: ${artifactResponse.downloadUrl}`);
+    const downloadResult = await downloadFile(artifactResponse.downloadUrl, tempFilePath);
+    
+    if (!downloadResult.success) {
+      return {
+        success: false,
+        error: downloadResult.error || 'Failed to download connector artifact'
+      };
+    }
+
+    // Step 3: Generate connector alias if not provided
+    // Extract name from GitHub repo URL (e.g., "colab-saas-conn-genetec-clearid" -> "genetec-clearid")
+    let alias = connectorAlias;
+    if (!alias) {
+      const repoMatch = githubRepoUrl.match(/github\.com\/[^\/]+\/([^\/]+)/i);
+      if (repoMatch && repoMatch[1]) {
+        // Remove common prefixes like "colab-saas-conn-" or "colab-"
+        alias = repoMatch[1]
+          .replace(/^colab-saas-conn-/, '')
+          .replace(/^colab-/, '')
+          .toLowerCase();
+      } else {
+        alias = 'connector';
+      }
+    }
+
+    // Step 4: Create the connector
+    console.log(`Creating connector "${alias}"...`);
+    const createResult = await createConnector(alias);
+    
+    if (!createResult.success || !createResult.connectorId) {
+      return {
+        success: false,
+        error: createResult.error || 'Failed to create connector'
+      };
+    }
+
+    // Step 5: Upload the connector zip file
+    if (!createResult.connectorId) {
+      return {
+        success: false,
+        error: 'No connector ID returned from create operation'
+      };
+    }
+
+    if (!tempFilePath) {
+      return {
+        success: false,
+        error: 'Temporary file path is missing'
+      };
+    }
+
+    console.log(`Uploading connector version...`);
+    const uploadResult = await uploadConnector(createResult.connectorId, tempFilePath);
+
+    // Clean up temporary file
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      try {
+        fs.unlinkSync(tempFilePath);
+        console.log(`Cleaned up temporary file: ${tempFilePath}`);
+      } catch (cleanupError) {
+        console.warn('Failed to clean up temporary file:', cleanupError);
+      }
+    }
+
+    if (!uploadResult.success) {
+      return {
+        success: false,
+        error: uploadResult.error || 'Failed to upload connector'
+      };
+    }
+
+    return {
+      success: true,
+      connectorId: createResult.connectorId,
+      version: uploadResult.version
+    };
+  } catch (error) {
+    // Clean up temporary file on error
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      try {
+        fs.unlinkSync(tempFilePath);
+      } catch (cleanupError) {
+        console.warn('Failed to clean up temporary file after error:', cleanupError);
+      }
+    }
+
+    console.error('Error uploading connector from GitHub:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error uploading connector'
+    };
+  }
 }
 
 /**
@@ -131,8 +285,9 @@ export async function createConnector(
 
 /**
  * Upload a connector zip file to the environment
+ * (Internal function used by uploadConnectorFromGitHub)
  */
-export async function uploadConnector(
+async function uploadConnector(
   connectorId: string,
   zipFilePath: string
 ): Promise<ConnectorDeploymentResponse> {

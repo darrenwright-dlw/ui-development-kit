@@ -7,7 +7,7 @@ import { disconnectFromISC, refreshTokens, unifiedLogin, validateTokens, checkAc
 import { deleteEnvironment, getTenants, setActiveEnvironment, updateEnvironment, UpdateEnvironmentRequest } from './authentication/config';
 import { getMarketplacePosts, getColabPostsByCategory, getTopicRaw, getTopic, getUserTitle, FilterConfig, ColabCategory } from './discourse/discourse';
 import { getGitHubReleaseArtifact } from './github/github';
-import { createConnector, uploadConnector, downloadFile } from './connector/connector';
+import { uploadConnectorFromGitHub } from './connector/connector';
 // Global variables
 let win: BrowserWindow | undefined;
 
@@ -316,16 +316,8 @@ try {
 
   //#region Connector Deployment IPC handlers
 
-  ipcMain.handle('create-connector', async (event, connectorAlias: string) => {
-    return createConnector(connectorAlias);
-  });
-
-  ipcMain.handle('upload-connector', async (event, connectorId: string, zipFilePath: string) => {
-    return uploadConnector(connectorId, zipFilePath);
-  });
-
-  ipcMain.handle('download-file', async (event, url: string, outputPath: string) => {
-    return downloadFile(url, outputPath);
+  ipcMain.handle('upload-connector', async (event, githubRepoUrl: string, connectorAlias?: string) => {
+    return uploadConnectorFromGitHub(githubRepoUrl, connectorAlias);
   });
 
   //#endregion

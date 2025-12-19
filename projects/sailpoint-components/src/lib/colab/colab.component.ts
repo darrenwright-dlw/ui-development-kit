@@ -224,60 +224,15 @@ export class ColabComponent implements OnInit, OnDestroy {
 
       console.log(`GitHub repository URL extracted: ${githubRepoUrl}`);
       
-      // Fetch the latest release artifact from GitHub
-      const artifactResponse = await this.apiFactory.getApi().getGitHubReleaseArtifact(githubRepoUrl);
-      
-      if (!artifactResponse.success || !artifactResponse.downloadUrl) {
-        throw new Error(artifactResponse.error || 'Failed to fetch GitHub release artifact');
-      }
-
-      console.log(`GitHub release artifact found: ${artifactResponse.filename} (${artifactResponse.tagName})`);
-      console.log(`Download URL: ${artifactResponse.downloadUrl}`);
-      
-      // Generate a temporary file path for the downloaded zip
-      const path = require('path');
-      const os = require('os');
-      const tempDir = os.tmpdir();
-      const tempFilePath = path.join(tempDir, artifactResponse.filename || 'connector.zip');
-
-      // Download the zip file
-      this.showMessage(`Downloading connector artifact: ${artifactResponse.filename}...`, 'info');
-      const downloadResult = await this.apiFactory.getApi().downloadFile(artifactResponse.downloadUrl, tempFilePath);
-      
-      if (!downloadResult.success) {
-        throw new Error(downloadResult.error || 'Failed to download connector artifact');
-      }
-
       // Generate connector alias from post title (sanitize it)
       const connectorAlias = this.sanitizeConnectorName(post.title);
 
-      // Create the connector (environment is fetched internally)
-      this.showMessage(`Creating connector "${connectorAlias}"...`, 'info');
-      const createResult = await this.apiFactory.getApi().createConnector(connectorAlias);
-      
-      if (!createResult.success || !createResult.connectorId) {
-        throw new Error(createResult.error || 'Failed to create connector');
-      }
-
-      // Upload the connector zip file (environment is fetched internally)
-      this.showMessage(`Uploading connector version...`, 'info');
-      const uploadResult = await this.apiFactory.getApi().uploadConnector(
-        createResult.connectorId,
-        tempFilePath
-      );
+      // Upload connector from GitHub (handles everything: fetch artifact, download, create, upload)
+      this.showMessage(`Deploying connector "${connectorAlias}" from GitHub...`, 'info');
+      const uploadResult = await this.apiFactory.getApi().uploadConnector(githubRepoUrl, connectorAlias);
 
       if (!uploadResult.success) {
-        throw new Error(uploadResult.error || 'Failed to upload connector');
-      }
-
-      // Clean up temporary file
-      try {
-        const fs = require('fs');
-        if (fs.existsSync(tempFilePath)) {
-          fs.unlinkSync(tempFilePath);
-        }
-      } catch (cleanupError) {
-        console.warn('Failed to clean up temporary file:', cleanupError);
+        throw new Error(uploadResult.error || 'Failed to deploy connector');
       }
 
       this.showMessage(

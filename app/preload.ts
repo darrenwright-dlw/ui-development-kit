@@ -41,9 +41,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getGitHubReleaseArtifact: (githubRepoUrl: string) => ipcMain.invoke('get-github-release-artifact', githubRepoUrl),
 
   // Connector deployment
-  createConnector: (connectorAlias: string) => ipcMain.invoke('create-connector', connectorAlias),
-  uploadConnector: (connectorId: string, zipFilePath: string) => ipcMain.invoke('upload-connector', connectorId, zipFilePath),
-  downloadFile: (url: string, outputPath: string) => ipcMain.invoke('download-file', url, outputPath),
+  uploadConnector: (githubRepoUrl: string, connectorAlias?: string) => ipcMain.invoke('upload-connector', githubRepoUrl, connectorAlias),
 
   // SDK functions
   ...sdkPreloader,
