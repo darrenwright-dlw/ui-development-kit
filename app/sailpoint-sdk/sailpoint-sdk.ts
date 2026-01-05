@@ -1,5 +1,6 @@
 import * as sdk from 'sailpoint-api-client';
 import { AxiosResponse } from 'axios';
+import axios from 'axios';
 
 /* tslint:disable */
 /* eslint-disable */
@@ -41,16 +42,30 @@ async function handleApiCall<T>(
 }
 
 function generateErrorResponse(error: unknown): ApiResponse<any> {
+  // Check if it's an Axios error with a response
+  if (axios.isAxiosError(error) && error.response) {
+    // Return the actual error response from the API
+    return {
+      data: error.response.data,
+      status: error.response.status,
+      statusText: error.response.statusText,
+      headers: error.response.headers as Record<string, string>,
+    };
+  }
+  
+  // Handle generic Error instances
   if (error instanceof Error) {
     return {
-      data: [],
+      data: { error: error.message },
       status: 500,
       statusText: error.message,
       headers: {},
     };
   }
+  
+  // Fallback for unknown errors
   return {
-    data: [],
+    data: { error: 'Unknown error occurred' },
     status: 500,
     statusText: 'Unknown error occurred',
     headers: {},

@@ -11,6 +11,12 @@ export interface DeploymentSuccessData {
   deploymentType?: 'connector' | 'workflow' | 'transform';
 }
 
+export interface DeploymentErrorData {
+  title: string;
+  message: string;
+  details?: string;
+}
+
 @Component({
   selector: 'app-deployment-success-dialog',
   standalone: true,
@@ -29,13 +35,15 @@ export interface DeploymentSuccessData {
       
       <mat-dialog-content>
         <p class="success-message">
-          The connector <strong>{{ data.connectorName }}</strong> has been successfully deployed to your environment.
+          <strong>{{ data.connectorName }}</strong> {{ getSuccessMessage() }}
         </p>
         
         <div class="deployment-details">
           <div class="detail-item">
             <span class="detail-label">{{ getIdLabel() }}:</span>
-            <span class="detail-value">{{ data.connectorId }}</span>
+            <div class="detail-value-wrapper">
+              <span class="detail-value">{{ data.connectorId }}</span>
+            </div>
           </div>
           <div class="detail-item" *ngIf="data.version">
             <span class="detail-label">Version:</span>
@@ -54,7 +62,8 @@ export interface DeploymentSuccessData {
   `,
   styles: [`
     .deployment-success-dialog {
-      min-width: 400px;
+      min-width: 500px;
+      max-width: 700px;
     }
 
     .dialog-header {
@@ -119,23 +128,44 @@ export interface DeploymentSuccessData {
 
     .detail-item {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
     }
 
     .detail-label {
       font-weight: 500;
       color: #666;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     :host-context(.dark-theme) .detail-label {
       color: #aaa;
     }
 
+    .detail-value-wrapper {
+      width: 100%;
+      max-height: 150px;
+      overflow-y: auto;
+      padding: 8px;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+    }
+
+    :host-context(.dark-theme) .detail-value-wrapper {
+      background: rgba(0, 0, 0, 0.2);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
     .detail-value {
       font-family: 'Courier New', monospace;
-      font-size: 14px;
+      font-size: 13px;
       color: #333;
+      word-break: break-all;
+      line-height: 1.6;
     }
 
     :host-context(.dark-theme) .detail-value {
@@ -167,6 +197,18 @@ export class DeploymentSuccessDialogComponent {
       case 'connector':
       default:
         return 'Connector ID';
+    }
+  }
+
+  getSuccessMessage(): string {
+    switch (this.data.deploymentType) {
+      case 'workflow':
+        return 'has been successfully deployed to your environment.';
+      case 'transform':
+        return 'has been successfully deployed to your environment.';
+      case 'connector':
+      default:
+        return 'has been successfully deployed to your environment.';
     }
   }
 

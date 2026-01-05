@@ -18,6 +18,7 @@ import { ColabCardComponent } from './components/colab-card/colab-card.component
 import { ColabPost, ColabCategory, DiscourseService } from './services/discourse.service';
 import { ElectronApiFactoryService } from '../services/electron-api-factory.service';
 import { DeploymentSuccessDialogComponent, DeploymentSuccessData } from './components/deployment-success-dialog/deployment-success-dialog.component';
+import { DeploymentErrorDialogComponent, DeploymentErrorData } from './components/deployment-error-dialog/deployment-error-dialog.component';
 import { SailPointSDKService } from '../sailpoint-sdk.service';
 
 // Define the categories to display
@@ -176,8 +177,16 @@ export class ColabComponent implements OnDestroy {
 
       console.log(`Found ${filesResult.files.length} JSON file(s) in repository`);
 
-      const createdWorkflows: string[] = [];
+      // Get existing workflows to check for duplicates
+      this.showMessage(`Checking for existing workflows...`, 'info');
+      const existingWorkflowsResponse = await this.sdkService.listWorkflows();
+      const existingWorkflowNames = new Set(
+        existingWorkflowsResponse.data.map((wf: any) => wf.name as string)
+      );
+
+      const createdWorkflows: Array<{ name: string; id: string }> = [];
       const errors: string[] = [];
+      const skipped: string[] = [];
 
       // Process each JSON file
       for (const file of filesResult.files) {
@@ -212,55 +221,122 @@ export class ColabComponent implements OnDestroy {
             continue;
           }
 
+          // Check if workflow with this name already exists
+          const workflowName = (workflowData.name || file.name) as string;
+          if (existingWorkflowNames.has(workflowName)) {
+            console.log(`Workflow "${workflowName}" already exists, skipping`);
+            skipped.push(workflowName);
+            continue;
+          }
+
           // Create the workflow using the SDK
           console.log(`Creating workflow from ${file.name}`);
           const response = await this.sdkService.createWorkflow({
             createWorkflowRequestV2025: workflowData
           });
 
+          // Check if the response indicates an error (status >= 400)
+          if (response.status >= 400) {
+            throw new Error(response.statusText || 'Workflow creation failed');
+          }
+
           if (response.data) {
-            const workflowName = response.data.name || file.name;
-            console.log(`Successfully created workflow: ${workflowName}`);
-            createdWorkflows.push(workflowName);
+            const name = response.data.name || file.name;
+            const id = response.data.id || 'unknown';
+            console.log(`Successfully created workflow: ${name} (ID: ${id})`);
+            createdWorkflows.push({ name, id });
           }
         } catch (fileError: any) {
           console.error(`Error processing ${file.name}:`, fileError);
-          errors.push(`${file.name}: ${fileError.message || 'Unknown error'}`);
+          
+          // Extract error message from Axios error structure or response
+          let errorMsg = 'Unknown error';
+          
+          // Check if it's an error from the SDK response status check
+          if (fileError.message && !fileError.response) {
+            errorMsg = fileError.message;
+          }
+          // Check if it's an Axios error with response data
+          else if (fileError.response?.data) {
+            const responseData = fileError.response.data;
+            
+            // Check for ISC API error format
+            if (responseData.messages && Array.isArray(responseData.messages) && responseData.messages.length > 0) {
+              errorMsg = responseData.messages.map((m: any) => (m.text || m.message) as string).join(', ');
+            } else if (responseData.message) {
+              errorMsg = responseData.message;
+            } else if (responseData.error) {
+              errorMsg = responseData.error;
+            }
+          } else if (fileError.message) {
+            errorMsg = fileError.message;
+          }
+          
+          // Check if it's a duplicate name error
+          if (errorMsg.toLowerCase().includes('name') && errorMsg.toLowerCase().includes('unique')) {
+            errors.push(`${file.name}: A workflow with this name already exists. Please delete the existing workflow first.`);
+          } else {
+            errors.push(`${file.name}: ${errorMsg}`);
+          }
         }
       }
 
       // Show results
       if (createdWorkflows.length > 0) {
-        const workflowNames = createdWorkflows.join(', ');
+        const workflowDetails = createdWorkflows.map(wf => `${wf.name} (${wf.id})`).join(', ');
         
         // Show success dialog
         this.dialog.open(DeploymentSuccessDialogComponent, {
-          width: '500px',
+          width: '700px',
           data: {
             connectorName: `${createdWorkflows.length} Workflow${createdWorkflows.length > 1 ? 's' : ''}`,
-            connectorId: workflowNames,
+            connectorId: workflowDetails,
             version: undefined,
             deploymentType: 'workflow'
           } as DeploymentSuccessData
         });
 
-        this.showMessage(
-          `Successfully deployed ${createdWorkflows.length} workflow${createdWorkflows.length > 1 ? 's' : ''} from "${post.title}"`,
-          'success'
-        );
+        let message = `Successfully deployed ${createdWorkflows.length} workflow${createdWorkflows.length > 1 ? 's' : ''} from "${post.title}"`;
+        if (skipped.length > 0) {
+          message += `. Skipped ${skipped.length} existing workflow${skipped.length > 1 ? 's' : ''}: ${skipped.join(', ')}`;
+        }
+        this.showMessage(message, 'success');
+      }
+
+      if (skipped.length > 0 && createdWorkflows.length === 0) {
+        // Show dialog for skipped workflows
+        this.dialog.open(DeploymentErrorDialogComponent, {
+          width: '600px',
+          data: {
+            title: 'Workflows Already Exist',
+            message: 'All workflows from this repository already exist in your environment.',
+            details: `The following workflow${skipped.length > 1 ? 's' : ''} already exist${skipped.length === 1 ? 's' : ''}:\n\n${skipped.join('\n')}\n\nPlease delete the existing workflow${skipped.length > 1 ? 's' : ''} first if you want to redeploy.`
+          } as DeploymentErrorData
+        });
       }
 
       if (errors.length > 0) {
         const errorMessage = `Some workflows failed to deploy:\n${errors.join('\n')}`;
         console.error(errorMessage);
-        if (createdWorkflows.length === 0) {
+        
+        // Show error dialog
+        this.dialog.open(DeploymentErrorDialogComponent, {
+          width: '600px',
+          data: {
+            title: 'Workflow Deployment Failed',
+            message: createdWorkflows.length === 0 && skipped.length === 0
+              ? 'Failed to deploy workflows. See details below.'
+              : `Deployed ${createdWorkflows.length} workflow(s) successfully, but ${errors.length} failed.`,
+            details: errors.join('\n\n')
+          } as DeploymentErrorData
+        });
+        
+        if (createdWorkflows.length === 0 && skipped.length === 0) {
           throw new Error(errorMessage);
-        } else {
-          this.showMessage(`Deployed ${createdWorkflows.length} workflow(s), but ${errors.length} failed`, 'warning');
         }
       }
 
-      if (createdWorkflows.length === 0 && errors.length === 0) {
+      if (createdWorkflows.length === 0 && errors.length === 0 && skipped.length === 0) {
         throw new Error('No workflows were deployed');
       }
 
@@ -434,8 +510,16 @@ export class ColabComponent implements OnDestroy {
 
       console.log(`Found ${filesResult.files.length} JSON file(s) in repository`);
 
-      const createdTransforms: string[] = [];
+      // Get existing transforms to check for duplicates
+      this.showMessage(`Checking for existing transforms...`, 'info');
+      const existingTransformsResponse = await this.sdkService.listTransforms();
+      const existingTransformNames = new Set(
+        existingTransformsResponse.data.map((tf: any) => tf.name as string)
+      );
+
+      const createdTransforms: Array<{ name: string; id: string }> = [];
       const errors: string[] = [];
+      const skipped: string[] = [];
 
       // Process each JSON file
       for (const file of filesResult.files) {
@@ -470,55 +554,122 @@ export class ColabComponent implements OnDestroy {
             continue;
           }
 
+          // Check if transform with this name already exists
+          const transformName = (transformData.name || file.name) as string;
+          if (existingTransformNames.has(transformName)) {
+            console.log(`Transform "${transformName}" already exists, skipping`);
+            skipped.push(transformName);
+            continue;
+          }
+
           // Create the transform using the SDK
           console.log(`Creating transform from ${file.name}`);
           const response = await this.sdkService.createTransform({
             transformV2025: transformData
           });
 
+          // Check if the response indicates an error (status >= 400)
+          if (response.status >= 400) {
+            throw new Error(response.statusText || 'Transform creation failed');
+          }
+
           if (response.data) {
-            const transformName = response.data.name || file.name;
-            console.log(`Successfully created transform: ${transformName}`);
-            createdTransforms.push(transformName);
+            const name = response.data.name || file.name;
+            const id = response.data.id || 'unknown';
+            console.log(`Successfully created transform: ${name} (ID: ${id})`);
+            createdTransforms.push({ name, id });
           }
         } catch (fileError: any) {
           console.error(`Error processing ${file.name}:`, fileError);
-          errors.push(`${file.name}: ${fileError.message || 'Unknown error'}`);
+          
+          // Extract error message from Axios error structure or response
+          let errorMsg = 'Unknown error';
+          
+          // Check if it's an error from the SDK response status check
+          if (fileError.message && !fileError.response) {
+            errorMsg = fileError.message;
+          }
+          // Check if it's an Axios error with response data
+          else if (fileError.response?.data) {
+            const responseData = fileError.response.data;
+            
+            // Check for ISC API error format
+            if (responseData.messages && Array.isArray(responseData.messages) && responseData.messages.length > 0) {
+              errorMsg = responseData.messages.map((m: any) => (m.text || m.message) as string).join(', ');
+            } else if (responseData.message) {
+              errorMsg = responseData.message;
+            } else if (responseData.error) {
+              errorMsg = responseData.error;
+            }
+          } else if (fileError.message) {
+            errorMsg = fileError.message;
+          }
+          
+          // Check if it's a duplicate name error
+          if (errorMsg.toLowerCase().includes('name') && errorMsg.toLowerCase().includes('unique')) {
+            errors.push(`${file.name}: A transform with this name already exists. Please delete the existing transform first.`);
+          } else {
+            errors.push(`${file.name}: ${errorMsg}`);
+          }
         }
       }
 
       // Show results
       if (createdTransforms.length > 0) {
-        const transformNames = createdTransforms.join(', ');
+        const transformDetails = createdTransforms.map(tf => `${tf.name} (${tf.id})`).join(', ');
         
         // Show success dialog
         this.dialog.open(DeploymentSuccessDialogComponent, {
-          width: '500px',
+          width: '700px',
           data: {
             connectorName: `${createdTransforms.length} Transform${createdTransforms.length > 1 ? 's' : ''}`,
-            connectorId: transformNames,
+            connectorId: transformDetails,
             version: undefined,
             deploymentType: 'transform'
           } as DeploymentSuccessData
         });
 
-        this.showMessage(
-          `Successfully deployed ${createdTransforms.length} transform${createdTransforms.length > 1 ? 's' : ''} from "${post.title}"`,
-          'success'
-        );
+        let message = `Successfully deployed ${createdTransforms.length} transform${createdTransforms.length > 1 ? 's' : ''} from "${post.title}"`;
+        if (skipped.length > 0) {
+          message += `. Skipped ${skipped.length} existing transform${skipped.length > 1 ? 's' : ''}: ${skipped.join(', ')}`;
+        }
+        this.showMessage(message, 'success');
+      }
+
+      if (skipped.length > 0 && createdTransforms.length === 0) {
+        // Show dialog for skipped transforms
+        this.dialog.open(DeploymentErrorDialogComponent, {
+          width: '600px',
+          data: {
+            title: 'Transforms Already Exist',
+            message: 'All transforms from this repository already exist in your environment.',
+            details: `The following transform${skipped.length > 1 ? 's' : ''} already exist${skipped.length === 1 ? 's' : ''}:\n\n${skipped.join('\n')}\n\nPlease delete the existing transform${skipped.length > 1 ? 's' : ''} first if you want to redeploy.`
+          } as DeploymentErrorData
+        });
       }
 
       if (errors.length > 0) {
         const errorMessage = `Some transforms failed to deploy:\n${errors.join('\n')}`;
         console.error(errorMessage);
-        if (createdTransforms.length === 0) {
+        
+        // Show error dialog
+        this.dialog.open(DeploymentErrorDialogComponent, {
+          width: '600px',
+          data: {
+            title: 'Transform Deployment Failed',
+            message: createdTransforms.length === 0 && skipped.length === 0
+              ? 'Failed to deploy transforms. See details below.'
+              : `Deployed ${createdTransforms.length} transform(s) successfully, but ${errors.length} failed.`,
+            details: errors.join('\n\n')
+          } as DeploymentErrorData
+        });
+        
+        if (createdTransforms.length === 0 && skipped.length === 0) {
           throw new Error(errorMessage);
-        } else {
-          this.showMessage(`Deployed ${createdTransforms.length} transform(s), but ${errors.length} failed`, 'warning');
         }
       }
 
-      if (createdTransforms.length === 0 && errors.length === 0) {
+      if (createdTransforms.length === 0 && errors.length === 0 && skipped.length === 0) {
         throw new Error('No transforms were deployed');
       }
 
