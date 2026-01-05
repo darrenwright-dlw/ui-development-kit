@@ -1,10 +1,10 @@
 import { UpdateEnvironmentRequest } from "./authentication/config";
-import { FilterConfig, ColabCategory } from "./discourse/discourse";
-import { GitHubReleaseArtifactResponse } from "./github/github";
-import { ConnectorDeploymentResponse } from "./connector/connector";
 
 const { contextBridge, ipcRenderer: ipcMain } = require('electron');
 const sdkPreloader = require('./sailpoint-sdk/sdk-preload');
+const { discoursePreloader } = require('./discourse/discourse-preload');
+const { githubPreloader } = require('./github/github-preload');
+const { connectorPreloader } = require('./connector/connector-preload');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Unified authentication and connection
@@ -30,21 +30,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // file browser
   browseForFile: () => ipcMain.invoke('browse-for-file'),
 
-  // Discourse/CoLab marketplace
-  getColabPosts: (filter: FilterConfig, limit?: number) => ipcMain.invoke('get-colab-posts', filter, limit),
-  getColabPostsByCategory: (category: ColabCategory, limit?: number) => ipcMain.invoke('get-colab-posts-by-category', category, limit),
-  getColabTopicRaw: (topicId: number) => ipcMain.invoke('get-colab-topic-raw', topicId),
-  getColabTopic: (topicId: number) => ipcMain.invoke('get-colab-topic', topicId),
-  getDiscourseUserTitle: (primaryGroupName: string) => ipcMain.invoke('get-discourse-user-title', primaryGroupName),
-
-  // GitHub operations
-  getGitHubReleaseArtifact: (githubRepoUrl: string) => ipcMain.invoke('get-github-release-artifact', githubRepoUrl),
-  listGitHubJsonFiles: (githubRepoUrl: string) => ipcMain.invoke('list-github-json-files', githubRepoUrl),
-  getGitHubFileContent: (downloadUrl: string, filename: string) => ipcMain.invoke('get-github-file-content', downloadUrl, filename),
-
-  // Connector deployment
-  uploadConnector: (githubRepoUrl: string, connectorAlias?: string) => ipcMain.invoke('upload-connector', githubRepoUrl, connectorAlias),
-
-  // SDK functions
+  // Modular preloaders
+  ...discoursePreloader,
+  ...githubPreloader,
+  ...connectorPreloader,
   ...sdkPreloader,
 });

@@ -3,11 +3,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as url from 'url';
 import { setupSailPointSDKHandlers } from './sailpoint-sdk/ipc-handlers';
+import { setupDiscourseHandlers } from './discourse/ipc-handlers';
+import { setupGitHubHandlers } from './github/ipc-handlers';
+import { setupConnectorHandlers } from './connector/ipc-handlers';
 import { disconnectFromISC, refreshTokens, unifiedLogin, validateTokens, checkAccessTokenStatus, getCurrentTokenDetails, checkOauthCodeFlowComplete } from './authentication/auth';
 import { deleteEnvironment, getTenants, setActiveEnvironment, updateEnvironment, UpdateEnvironmentRequest } from './authentication/config';
-import { getMarketplacePosts, getColabPostsByCategory, getTopicRaw, getTopic, getUserTitle, FilterConfig, ColabCategory } from './discourse/discourse';
-import { getGitHubReleaseArtifact, listGitHubJsonFiles, getGitHubFileContent } from './github/github';
-import { uploadConnectorFromGitHub } from './connector/connector';
 // Global variables
 let win: BrowserWindow | undefined;
 
@@ -284,57 +284,12 @@ try {
     }
   });
 
-  //#region Discourse/CoLab IPC handlers
-
-  ipcMain.handle('get-colab-posts', async (event, filter: FilterConfig, limit?: number) => {
-    return getMarketplacePosts(filter, limit);
-  });
-
-  ipcMain.handle('get-colab-posts-by-category', async (event, category: ColabCategory, limit?: number) => {
-    return getColabPostsByCategory(category, limit);
-  });
-
-  ipcMain.handle('get-colab-topic-raw', async (event, topicId: number) => {
-    return getTopicRaw(topicId);
-  });
-
-  ipcMain.handle('get-colab-topic', async (event, topicId: number) => {
-    return getTopic(topicId);
-  });
-
-  ipcMain.handle('get-discourse-user-title', async (event, primaryGroupName: string) => {
-    return getUserTitle(primaryGroupName);
-  });
-
-  //#region GitHub IPC handlers
-
-  ipcMain.handle('get-github-release-artifact', async (event, githubRepoUrl: string) => {
-    return getGitHubReleaseArtifact(githubRepoUrl);
-  });
-
-  ipcMain.handle('list-github-json-files', async (event, githubRepoUrl: string) => {
-    return listGitHubJsonFiles(githubRepoUrl);
-  });
-
-  ipcMain.handle('get-github-file-content', async (event, downloadUrl: string, filename: string) => {
-    return getGitHubFileContent(downloadUrl, filename);
-  });
-
   //#endregion
 
-  //#region Connector Deployment IPC handlers
-
-  ipcMain.handle('upload-connector', async (event, githubRepoUrl: string, connectorAlias?: string) => {
-    return uploadConnectorFromGitHub(githubRepoUrl, connectorAlias);
-  });
-
-  //#endregion
-
-  //#endregion
-
-  //#endregion
-
-  // Populate SDK handlers
+  // Setup modular IPC handlers
+  setupDiscourseHandlers();
+  setupGitHubHandlers();
+  setupConnectorHandlers();
   setupSailPointSDKHandlers();
 
 } catch (e) {
