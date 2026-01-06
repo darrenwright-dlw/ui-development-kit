@@ -45,6 +45,9 @@ export interface ElectronAPIInterface {
   // Connector deployment
   uploadConnector: (githubRepoUrl: string, connectorAlias?: string) => Promise<ConnectorDeploymentResponse>;
   
+  // Connector Customizer Deployment
+  uploadCustomizer: (githubRepoUrl: string, customizerName?: string) => Promise<CustomizerDeploymentResponse>;
+  
   // SailPoint SDK functions
   // These are dynamically added and would need to be proxied through the web service
   [key: string]: any;
@@ -205,6 +208,13 @@ export type GitHubFileContentResponse = {
 export type ConnectorDeploymentResponse = {
   success: boolean;
   connectorId?: string;
+  version?: number;
+  error?: string;
+};
+
+export type CustomizerDeploymentResponse = {
+  success: boolean;
+  customizerId?: string;
   version?: number;
   error?: string;
 };
@@ -696,6 +706,16 @@ export class WebApiService implements ElectronAPIInterface, OnDestroy {
     return Promise.resolve({
       success: false,
       error: 'Connector deployment is only available in Electron mode'
+    });
+  }
+
+  // Connector Customizer deployment
+  uploadCustomizer(): Promise<CustomizerDeploymentResponse> {
+    // Note: This would need to be proxied through the backend server
+    // For now, return an error indicating this is not available in web mode
+    return Promise.resolve({
+      success: false,
+      error: 'Customizer deployment is only available in Electron mode'
     });
   }
 

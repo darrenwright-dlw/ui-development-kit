@@ -125,7 +125,7 @@ export class ColabComponent implements OnDestroy {
           await this.deploySaaSConnector(post, rawContent);
           break;
         case 'saas-connector-customizers':
-          await this.deploySaaSConnectorCustomizer(post);
+          await this.deployConnectorCustomizer(post);
           break;
         case 'transforms':
           await this.deployTransform(post, rawContent);
@@ -466,17 +466,6 @@ export class ColabComponent implements OnDestroy {
   }
 
   /**
-   * Deploy a SaaS Connector Customizer to the environment
-   */
-  private deploySaaSConnectorCustomizer(post: ColabPost): Promise<void> {
-    // TODO: Implement SaaS Connector Customizer deployment
-    // This will be implemented based on the deployment approach provided later
-    console.log('Deploying SaaS Connector Customizer:', post.title);
-    this.showMessage(`SaaS Connector Customizer deployment for "${post.title}" - Coming soon!`, 'info');
-    return Promise.resolve();
-  }
-
-  /**
    * Deploy a Transform to the environment
    */
   private async deployTransform(post: ColabPost, rawContent?: string): Promise<void> {
@@ -687,6 +676,82 @@ export class ColabComponent implements OnDestroy {
     const section = this.sections?.find(s => s.category.id === category);
     if (section) {
       section.clearDeployingState();
+    }
+  }
+
+  async deployConnectorCustomizer(post: ColabPost): Promise<void> {
+    this.snackBar.open('Deploying Connector Customizer...', 'Close', { duration: 3000 });
+    
+    try {
+      // Step 1: Get the raw post content to extract GitHub URL
+      const rawResponse = await this.apiFactory.getApi().getColabTopicRaw(post.id);
+      
+      if (!rawResponse.success || !rawResponse.data) {
+        this.dialog.open(DeploymentErrorDialogComponent, {
+          width: '700px',
+          data: {
+            title: 'Deployment Failed',
+            message: 'Failed to fetch the CoLab post details. Please try again.',
+            details: rawResponse.error || 'Could not retrieve raw post content.'
+          }
+        });
+        return;
+      }
+
+      // Step 2: Extract GitHub repository URL from the raw content
+      const content = rawResponse.data;
+      const githubRepoUrl = this.extractGitHubRepoUrl(content || '');
+      
+      if (!githubRepoUrl) {
+        this.dialog.open(DeploymentErrorDialogComponent, {
+          width: '700px',
+          data: {
+            title: 'Deployment Failed',
+            message: 'Could not find a GitHub repository link in this CoLab post.',
+            details: 'Please ensure the CoLab post contains a valid GitHub repository URL.'
+          }
+        });
+        return;
+      }
+
+      console.log('GitHub repository URL extracted:', githubRepoUrl);
+
+      // Step 3: Upload the customizer from GitHub
+      const result = await this.apiFactory.getApi().uploadCustomizer(githubRepoUrl);
+
+      if (result.success && result.customizerId) {
+        const customizerName = post.title;
+        this.dialog.open(DeploymentSuccessDialogComponent, {
+          width: '700px',
+          data: {
+            connectorName: customizerName,
+            connectorId: `${result.customizerId}`,
+            version: result.version,
+            deploymentType: 'customizer'
+          }
+        });
+        this.snackBar.open('Connector Customizer deployed successfully!', 'Close', { duration: 5000 });
+      } else {
+        this.dialog.open(DeploymentErrorDialogComponent, {
+          width: '700px',
+          data: {
+            title: 'Deployment Failed',
+            message: 'Failed to deploy the connector customizer to your environment.',
+            details: result.error || 'Unknown error occurred during customizer deployment.'
+          }
+        });
+      }
+
+    } catch (error: any) {
+      console.error('Error deploying connector customizer:', error);
+      this.dialog.open(DeploymentErrorDialogComponent, {
+        width: '700px',
+        data: {
+          title: 'Deployment Failed',
+          message: 'An unexpected error occurred during customizer deployment.',
+          details: (error.message || 'Unknown error occurred.') as string
+        }
+      });
     }
   }
 

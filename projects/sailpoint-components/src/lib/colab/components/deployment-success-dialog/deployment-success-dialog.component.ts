@@ -8,7 +8,7 @@ export interface DeploymentSuccessData {
   connectorName: string;
   version?: number;
   connectorId: string;
-  deploymentType?: 'connector' | 'workflow' | 'transform';
+  deploymentType?: 'connector' | 'workflow' | 'transform' | 'customizer';
 }
 
 export interface DeploymentErrorData {
@@ -194,6 +194,8 @@ export class DeploymentSuccessDialogComponent {
         return 'Workflow ID';
       case 'transform':
         return 'Transform ID';
+      case 'customizer':
+        return 'Customizer ID';
       case 'connector':
       default:
         return 'Connector ID';

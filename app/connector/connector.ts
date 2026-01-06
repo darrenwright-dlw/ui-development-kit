@@ -33,6 +33,13 @@ export interface ConnectorDeploymentResponse {
   error?: string;
 }
 
+export interface CustomizerDeploymentResponse {
+  success: boolean;
+  customizerId?: string;
+  version?: number;
+  error?: string;
+}
+
 /**
  * Upload a connector from a GitHub repository URL
  * This function handles the complete deployment flow:
