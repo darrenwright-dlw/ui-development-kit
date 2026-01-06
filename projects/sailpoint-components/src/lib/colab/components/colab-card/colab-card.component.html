@@ -56,9 +56,13 @@
       (click)="onDeploy($event)"
       [disabled]="isDeploying"
     >
-      <mat-spinner *ngIf="isDeploying" diameter="18" class="deploy-spinner"></mat-spinner>
-      <mat-icon *ngIf="!isDeploying">rocket_launch</mat-icon>
-      <span>{{ isDeploying ? 'Deploying...' : 'Deploy' }}</span>
+      <span class="button-content">
+        <span class="button-icon">
+          <mat-spinner *ngIf="isDeploying" diameter="18"></mat-spinner>
+          <mat-icon *ngIf="!isDeploying">rocket_launch</mat-icon>
+        </span>
+        <span class="button-text">{{ isDeploying ? 'Deploying...' : 'Deploy' }}</span>
+      </span>
     </button>
   </mat-card-actions>
 </mat-card>

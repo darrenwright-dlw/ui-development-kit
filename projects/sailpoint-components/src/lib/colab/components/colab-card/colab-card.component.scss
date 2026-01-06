@@ -175,15 +175,35 @@
   border-radius: 8px;
   transition: background 0.2s ease;
 
+  .button-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .button-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .button-text {
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
   mat-icon {
     font-size: 18px;
     width: 18px;
     height: 18px;
   }
 
-  .deploy-spinner {
-    margin-right: 4px;
-  }
+
 }
 
 // Dark theme support
