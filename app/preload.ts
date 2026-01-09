@@ -2,6 +2,9 @@ import { UpdateEnvironmentRequest } from "./authentication/config";
 
 const { contextBridge, ipcRenderer: ipcMain } = require('electron');
 const sdkPreloader = require('./sailpoint-sdk/sdk-preload');
+const { discoursePreloader } = require('./discourse/discourse-preload');
+const { githubPreloader } = require('./github/github-preload');
+const { connectorPreloader } = require('./connector/connector-preload');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Unified authentication and connection
@@ -27,6 +30,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // file browser
   browseForFile: () => ipcMain.invoke('browse-for-file'),
 
-  // SDK functions
+  // Modular preloaders
+  ...discoursePreloader,
+  ...githubPreloader,
+  ...connectorPreloader,
   ...sdkPreloader,
 });

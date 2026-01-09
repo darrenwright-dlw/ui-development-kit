@@ -3,6 +3,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as url from 'url';
 import { setupSailPointSDKHandlers } from './sailpoint-sdk/ipc-handlers';
+import { setupDiscourseHandlers } from './discourse/ipc-handlers';
+import { setupGitHubHandlers } from './github/ipc-handlers';
+import { setupConnectorHandlers } from './connector/ipc-handlers';
 import { disconnectFromISC, refreshTokens, unifiedLogin, validateTokens, checkAccessTokenStatus, getCurrentTokenDetails, checkOauthCodeFlowComplete } from './authentication/auth';
 import { deleteEnvironment, getTenants, setActiveEnvironment, updateEnvironment, UpdateEnvironmentRequest } from './authentication/config';
 // Global variables
@@ -283,7 +286,10 @@ try {
 
   //#endregion
 
-  // Populate SDK handlers
+  // Setup modular IPC handlers
+  setupDiscourseHandlers();
+  setupGitHubHandlers();
+  setupConnectorHandlers();
   setupSailPointSDKHandlers();
 
 } catch (e) {
