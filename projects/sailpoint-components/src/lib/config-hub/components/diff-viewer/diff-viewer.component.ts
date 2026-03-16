@@ -8,6 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatListModule } from '@angular/material/list';
 import { FormsModule } from '@angular/forms';
 import * as Diff from 'diff';
 import { ConfigHubGitService } from '../../services/config-hub-git.service';
@@ -29,6 +30,7 @@ interface CommitEntry {
     MatButtonModule,
     MatButtonToggleModule,
     MatIconModule,
+    MatListModule,
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTooltipModule,
@@ -206,5 +208,20 @@ export class DiffViewerComponent implements OnChanges {
 
   splitRightLines(): DiffLine[] {
     return this.diffLines().filter(l => l.type !== 'removed');
+  }
+
+  typeIcon(typeName: string): string {
+    const icons: Record<string, string> = {
+      ROLE: 'manage_accounts',
+      RULE: 'code',
+      SOURCE: 'device_hub',
+      WORKFLOW: 'account_tree',
+      TRIGGER_SUBSCRIPTION: 'notifications',
+      IDENTITY_PROFILE: 'person',
+      ACCESS_PROFILE: 'badge',
+      TRANSFORM: 'transform',
+      CONNECTOR_RULE: 'build',
+    };
+    return icons[typeName] ?? 'description';
   }
 }

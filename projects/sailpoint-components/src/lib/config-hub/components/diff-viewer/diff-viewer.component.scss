@@ -5,19 +5,20 @@
   justify-content: center;
   height: 100%;
   gap: 12px;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--theme-primary-text);
+  opacity: 0.55;
 
   mat-icon {
     font-size: 48px;
     width: 48px;
     height: 48px;
-    opacity: 0.35;
   }
 
   p {
     margin: 0;
     font-size: 14px;
     text-align: center;
+    opacity: 1; // reset parent opacity for text
   }
 
   &.small {
@@ -33,83 +34,98 @@
   overflow: hidden;
 }
 
+// ── Header ───────────────────────────────────────────────────────────────────
+
 .diff-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  gap: 16px;
+  padding: 10px 16px;
+  gap: 12px;
   flex-wrap: wrap;
+  // Use a subtle header tint rather than a full surface colour so it stays
+  // visible in both light and dark without depending on --mat-sys-* tokens
+  background: color-mix(in srgb, var(--theme-primary-text) 6%, var(--theme-background));
+  border-bottom: 1px solid color-mix(in srgb, var(--theme-primary-text) 15%, transparent);
+  flex-shrink: 0;
 }
 
 .object-title {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.type-chip {
-  background: var(--mat-sys-secondary-container);
-  color: var(--mat-sys-on-secondary-container);
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  min-width: 0;
 }
 
 .object-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--theme-primary-text);
+}
+
+// Type chip — tinted with the primary brand colour
+.type-chip {
+  --mdc-chip-elevated-container-color: color-mix(in srgb, var(--theme-primary) 15%, var(--theme-background));
+  --mdc-chip-label-text-color: var(--theme-primary);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-.diff-stats {
-  display: flex;
-  gap: 6px;
-  font-size: 13px;
+// Diff-stat chips — green / red tinted against the current background so they
+// automatically invert in dark mode without needing a media query
+.stat-chip {
   font-family: monospace;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 13px;
 }
 
-.added-count {
-  color: #2e7d32;
+.added-chip {
+  --mdc-chip-elevated-container-color: color-mix(in srgb, #4caf50 18%, var(--theme-background));
+  --mdc-chip-label-text-color: color-mix(in srgb, #4caf50 70%, var(--theme-primary-text));
 }
 
-.removed-count {
-  color: #c62828;
+.removed-chip {
+  --mdc-chip-elevated-container-color: color-mix(in srgb, #f44336 18%, var(--theme-background));
+  --mdc-chip-label-text-color: color-mix(in srgb, #f44336 70%, var(--theme-primary-text));
 }
 
-.view-toggle {
-  height: 36px;
-}
+// ── Status rows ───────────────────────────────────────────────────────────────
 
-.loading-row {
+.status-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 24px;
-  color: var(--mat-sys-on-surface-variant);
+  padding: 20px 16px;
+  color: var(--theme-primary-text);
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
-.error-message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px;
-  color: var(--mat-sys-error);
+.error-row {
+  // Warn colour handled by mat-icon color="warn"; keep text readable
+  color: var(--theme-primary-text);
 }
+
+// ── Commit selectors ──────────────────────────────────────────────────────────
 
 .commit-selectors {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 10px 16px 4px;
+  flex-shrink: 0;
 }
 
 .commit-select {
@@ -117,96 +133,49 @@
 }
 
 .arrow-icon {
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--theme-primary-text);
+  opacity: 0.5;
   flex-shrink: 0;
 }
 
-.sha-label {
+.opt-sha {
   font-family: monospace;
-  font-size: 12px;
+  font-size: 11px;
   margin-right: 8px;
-  color: var(--mat-sys-on-surface-variant);
+  opacity: 0.65;
 }
 
-.msg-label {
+.opt-msg {
   font-size: 13px;
 }
 
-.time-label {
-  font-size: 11px;
-  color: var(--mat-sys-on-surface-variant);
-  margin-left: 8px;
-}
+// ── Commit timeline ───────────────────────────────────────────────────────────
 
-// Commit timeline
 .commit-timeline {
-  max-height: 220px;
+  max-height: 200px;
   overflow-y: auto;
-  padding: 8px 16px;
-}
-
-.timeline-entry {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 8px 6px;
-  border-radius: 8px;
-  cursor: pointer;
-  position: relative;
-
-  &:hover {
-    background: var(--mat-sys-surface-variant);
-  }
-
-  &.selected {
-    background: var(--mat-sys-secondary-container);
-
-    .timeline-dot {
-      background: var(--mat-sys-secondary);
-      width: 12px;
-      height: 12px;
-      margin-top: 5px;
-    }
-  }
-}
-
-.timeline-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--mat-sys-outline);
   flex-shrink: 0;
-  margin-top: 7px;
 }
 
-.timeline-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.commit-message {
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.commit-meta {
-  display: flex;
-  gap: 8px;
+.commit-meta-line {
   font-size: 11px;
-  color: var(--mat-sys-on-surface-variant);
-  margin-top: 2px;
+  color: var(--theme-primary-text);
+  opacity: 0.7;
 }
 
-.sha {
+.sha-badge {
+  display: inline-block;
   font-family: monospace;
-  background: var(--mat-sys-surface-variant);
-  padding: 0 4px;
-  border-radius: 3px;
+  font-size: 11px;
+  background: color-mix(in srgb, var(--theme-primary-text) 12%, var(--theme-background));
+  color: var(--theme-primary-text);
+  padding: 0 5px;
+  border-radius: 4px;
+  margin-right: 4px;
 }
 
-// Diff table
+// ── Diff table ────────────────────────────────────────────────────────────────
+
 .diff-table-wrapper {
   flex: 1;
   overflow: auto;
@@ -217,43 +186,44 @@
   border-collapse: collapse;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.6;
+  background: var(--theme-background);
 }
 
+// Diff row colours use color-mix against --theme-background so they
+// automatically invert in dark mode without a media query.
 .diff-line {
   &.diff-added {
-    background: #e8f5e9;
+    background-color: color-mix(in srgb, #4caf50 13%, var(--theme-background));
 
     .diff-gutter {
-      color: #2e7d32;
-      background: #c8e6c9;
+      background-color: color-mix(in srgb, #4caf50 28%, var(--theme-background));
+      color: color-mix(in srgb, #4caf50 70%, var(--theme-primary-text));
     }
   }
 
   &.diff-removed {
-    background: #ffebee;
+    background-color: color-mix(in srgb, #f44336 13%, var(--theme-background));
 
     .diff-gutter {
-      color: #c62828;
-      background: #ffcdd2;
+      background-color: color-mix(in srgb, #f44336 28%, var(--theme-background));
+      color: color-mix(in srgb, #f44336 70%, var(--theme-primary-text));
     }
   }
 
-  &.diff-unchanged {
-    .diff-gutter {
-      color: var(--mat-sys-on-surface-variant);
-    }
+  &.diff-unchanged .diff-gutter {
+    color: color-mix(in srgb, var(--theme-primary-text) 45%, transparent);
   }
 }
 
 .line-num {
-  width: 48px;
-  min-width: 48px;
+  width: 44px;
+  min-width: 44px;
   text-align: right;
-  padding: 0 8px;
-  color: var(--mat-sys-on-surface-variant);
+  padding: 0 6px;
+  color: color-mix(in srgb, var(--theme-primary-text) 45%, transparent);
   user-select: none;
-  border-right: 1px solid var(--mat-sys-outline-variant);
+  border-right: 1px solid color-mix(in srgb, var(--theme-primary-text) 15%, transparent);
 }
 
 .diff-gutter {
@@ -262,12 +232,13 @@
   text-align: center;
   padding: 0 2px;
   user-select: none;
-  border-right: 1px solid var(--mat-sys-outline-variant);
+  border-right: 1px solid color-mix(in srgb, var(--theme-primary-text) 15%, transparent);
 }
 
 .diff-content {
   padding: 0 8px;
   width: 100%;
+  color: var(--theme-primary-text);
 
   pre {
     margin: 0;
@@ -278,7 +249,8 @@
   }
 }
 
-// Split diff
+// ── Split diff ────────────────────────────────────────────────────────────────
+
 .split-diff {
   flex: 1;
   display: flex;
@@ -288,7 +260,7 @@
 .split-pane {
   flex: 1;
   overflow: auto;
-  border-right: 1px solid var(--mat-sys-outline-variant);
+  border-right: 1px solid color-mix(in srgb, var(--theme-primary-text) 15%, transparent);
 
   &:last-child {
     border-right: none;
@@ -299,30 +271,22 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--mat-sys-surface-variant);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--theme-primary-text) 8%, var(--theme-background));
+  color: var(--theme-primary-text);
   font-size: 12px;
-  font-family: monospace;
-  padding: 4px 8px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-}
+  padding: 6px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--theme-primary-text) 15%, transparent);
 
-// Dark mode overrides
-@media (prefers-color-scheme: dark) {
-  .diff-line.diff-added {
-    background: #1b5e20;
-
-    .diff-gutter {
-      background: #2e7d32;
-      color: #c8e6c9;
-    }
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
   }
 
-  .diff-line.diff-removed {
-    background: #7f0000;
-
-    .diff-gutter {
-      background: #c62828;
-      color: #ffcdd2;
-    }
+  code {
+    font-family: monospace;
   }
 }

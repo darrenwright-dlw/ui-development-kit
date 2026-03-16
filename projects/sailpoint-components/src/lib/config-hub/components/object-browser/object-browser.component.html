@@ -3,7 +3,7 @@
   <!-- Type column -->
   <div class="type-column">
     <div class="column-header">
-      <span>Object Types</span>
+      <span class="column-label">Object Types</span>
       <button mat-icon-button (click)="refresh()" [disabled]="loadingTypes()"
               matTooltip="Refresh">
         <mat-icon>refresh</mat-icon>
@@ -18,10 +18,10 @@
         <span>No object types found.<br>Configure the repository first.</span>
       </div>
     } @else {
-      <mat-nav-list>
+      <mat-nav-list dense>
         @for (type of objectTypes(); track type.name) {
           <mat-list-item
-            [class.selected]="selectedType() === type.name"
+            [activated]="selectedType() === type.name"
             (click)="selectType(type.name)">
             <mat-icon matListItemIcon>{{ typeIcon(type.name) }}</mat-icon>
             <span matListItemTitle>{{ type.name }}</span>
@@ -35,7 +35,7 @@
   <div class="object-column">
     @if (selectedType()) {
       <div class="column-header">
-        <span>{{ selectedType() }}</span>
+        <span class="column-label">{{ selectedType() }}</span>
         @if (loadingObjects()) {
           <mat-spinner diameter="18"></mat-spinner>
         }
@@ -47,29 +47,27 @@
           <span>No objects found</span>
         </div>
       } @else {
-        <mat-nav-list>
+        <mat-nav-list dense>
           @for (obj of objects(); track obj.objectId) {
             <mat-list-item
-              [class.selected]="selectedObject()?.objectId === obj.objectId"
+              [activated]="selectedObject()?.objectId === obj.objectId"
               (click)="selectObject(obj)">
               <mat-icon matListItemIcon>{{ typeIcon(obj.objectType) }}</mat-icon>
-              <span matListItemTitle class="object-name" [matTooltip]="obj.objectId">
-                {{ obj.name }}
-              </span>
+              <span matListItemTitle [matTooltip]="obj.objectId">{{ obj.name }}</span>
               @if (obj.lastCommit) {
-                <div matListItemLine class="commit-meta">
+                <span matListItemLine class="commit-meta">
                   <mat-icon class="meta-icon">history</mat-icon>
                   <span class="relative-time"
                         [matTooltip]="formatTimestamp(obj.lastCommit.timestamp)">
                     {{ formatRelativeTime(obj.lastCommit.timestamp) }}
                   </span>
-                  <span class="author">· {{ obj.lastCommit.author }}</span>
-                </div>
+                  <span class="commit-author">&middot; {{ obj.lastCommit.author }}</span>
+                </span>
               } @else {
-                <div matListItemLine class="commit-meta loading">
+                <span matListItemLine class="commit-meta loading">
                   <mat-icon class="meta-icon">schedule</mat-icon>
-                  <span>Loading history…</span>
-                </div>
+                  <span>Loading&hellip;</span>
+                </span>
               }
             </mat-list-item>
           }

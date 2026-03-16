@@ -23,14 +23,16 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--mat-sys-tertiary-container);
-  color: var(--mat-sys-on-tertiary-container);
+  background: color-mix(in srgb, var(--theme-primary) 12%, var(--theme-background));
+  color: var(--theme-primary-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--theme-primary) 30%, transparent);
   padding: 10px 20px;
   font-size: 14px;
   flex-shrink: 0;
 
   mat-icon {
     flex-shrink: 0;
+    color: var(--theme-primary);
   }
 
   span {
@@ -52,7 +54,7 @@
 .browser-pane {
   width: 480px;
   min-width: 360px;
-  border-right: 1px solid var(--mat-sys-outline-variant);
+  border-right: 1px solid color-mix(in srgb, var(--theme-primary-text) 15%, transparent);
   overflow: hidden;
   display: flex;
   flex-direction: column;

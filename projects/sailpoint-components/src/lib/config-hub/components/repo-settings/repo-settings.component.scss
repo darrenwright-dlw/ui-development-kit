@@ -21,8 +21,9 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: var(--mat-sys-secondary-container);
-  color: var(--mat-sys-on-secondary-container);
+  background: color-mix(in srgb, var(--theme-primary) 10%, var(--theme-background));
+  color: var(--theme-primary-text);
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 30%, transparent);
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 13px;
@@ -34,6 +35,7 @@
     width: 18px;
     height: 18px;
     margin-top: 2px;
+    color: var(--theme-primary);
   }
 }
 
@@ -50,7 +52,8 @@
 
 code {
   font-family: monospace;
-  background: var(--mat-sys-surface-variant);
+  background: color-mix(in srgb, var(--theme-primary-text) 10%, var(--theme-background));
+  color: var(--theme-primary-text);
   padding: 1px 4px;
   border-radius: 3px;
 }
