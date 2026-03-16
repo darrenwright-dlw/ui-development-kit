@@ -155,6 +155,12 @@
   max-height: 200px;
   overflow-y: auto;
   flex-shrink: 0;
+
+  // The global button padding rule shifts icon buttons in MDC list item end
+  // slots upward — nudge them back to the vertical centre of the row.
+  button[matListItemMeta] {
+    margin-top: 12px;
+  }
 }
 
 .commit-meta-line {

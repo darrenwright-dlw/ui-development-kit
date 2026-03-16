@@ -577,6 +577,12 @@ button.mat-mdc-mini-fab {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  vertical-align: middle !important;
+  // The global `button { padding: 5px }` adds top/bottom padding that distorts
+  // Angular Material's button height and breaks vertical centering in flex rows.
+  // Material controls vertical rhythm via min-height + internal flex layout.
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
 }
 
 .mat-mdc-paginator-range-actions .mat-mdc-icon-button,
