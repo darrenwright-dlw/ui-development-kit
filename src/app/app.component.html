@@ -170,6 +170,11 @@
         <mat-icon class="card-icon">dashboard</mat-icon>
         Colab
       </a>
+      <a *ngIf="isComponentEnabled('config-hub')" mat-list-item class="sidebar-link" routerLink="/config-hub" routerLinkActive="active-link"
+        [class.disabled]="!isConnected" (click)="onNavItemClick($event)">
+        <mat-icon class="card-icon">dashboard</mat-icon>
+        Config Hub
+      </a>
     </mat-nav-list>
   </mat-sidenav>
 

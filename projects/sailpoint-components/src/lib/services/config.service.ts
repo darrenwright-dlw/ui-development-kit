@@ -134,6 +134,14 @@ export class ConfigService {
             icon: 'dashboard',
             description: 'Manage colab in SailPoint.',
             enabled: false
+        },
+        {
+            name: 'config-hub',
+            displayName: 'Config Hub',
+            route: '/config-hub',
+            icon: 'dashboard',
+            description: 'Manage config hub in SailPoint.',
+            enabled: false
         }
     ];
 
