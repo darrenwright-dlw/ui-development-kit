@@ -1,0 +1,66 @@
+.config-hub-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.hub-toolbar {
+  flex-shrink: 0;
+  gap: 12px;
+
+  .toolbar-title {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+}
+
+.no-settings-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+  padding: 10px 20px;
+  font-size: 14px;
+  flex-shrink: 0;
+
+  mat-icon {
+    flex-shrink: 0;
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.workspace-no-settings {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.browser-pane {
+  width: 480px;
+  min-width: 360px;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-pane {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

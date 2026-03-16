@@ -1,0 +1,42 @@
+<div class="config-hub-shell">
+
+  <!-- Top toolbar -->
+  <mat-toolbar color="primary" class="hub-toolbar">
+    <mat-icon>hub</mat-icon>
+    <span class="toolbar-title">Config Hub</span>
+    <span class="spacer"></span>
+    <button mat-icon-button (click)="openSettings()" matTooltip="Repository settings">
+      <mat-icon>settings</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  @if (!hasSettings()) {
+    <div class="no-settings-banner">
+      <mat-icon>info</mat-icon>
+      <span>No repository configured yet.</span>
+      <button mat-stroked-button (click)="openSettings()">
+        <mat-icon>settings</mat-icon>
+        Configure Repository
+      </button>
+    </div>
+  }
+
+  <div class="workspace" [class.workspace-no-settings]="!hasSettings()">
+
+    <!-- Left: object browser -->
+    <div class="browser-pane">
+      <app-object-browser
+        (objectSelected)="onObjectSelected($event)">
+      </app-object-browser>
+    </div>
+
+    <!-- Right: diff viewer -->
+    <div class="detail-pane">
+      <app-diff-viewer
+        [backupObject]="selectedObject()"
+        (restoreRequested)="onRestoreRequested($event)">
+      </app-diff-viewer>
+    </div>
+
+  </div>
+</div>

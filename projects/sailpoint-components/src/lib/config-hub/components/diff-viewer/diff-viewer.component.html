@@ -1,0 +1,197 @@
+@if (!backupObject()) {
+  <div class="empty-state">
+    <mat-icon>compare</mat-icon>
+    <p>Select an object from the browser to view its change history</p>
+  </div>
+} @else {
+  <div class="diff-viewer">
+
+    <!-- Header -->
+    <div class="diff-header">
+      <div class="object-title">
+        <span class="type-chip">{{ backupObject()!.objectType }}</span>
+        <span class="object-name">{{ backupObject()!.name }}</span>
+      </div>
+
+      <div class="header-actions">
+        @if (hasChanges) {
+          <span class="diff-stats">
+            <span class="added-count">+{{ addedCount }}</span>
+            <span class="removed-count">-{{ removedCount }}</span>
+          </span>
+        }
+
+        <mat-button-toggle-group [value]="viewMode()" (change)="viewMode.set($event.value)"
+                                  class="view-toggle">
+          <mat-button-toggle value="unified" matTooltip="Unified diff">
+            <mat-icon>view_stream</mat-icon>
+          </mat-button-toggle>
+          <mat-button-toggle value="split" matTooltip="Split diff">
+            <mat-icon>view_column</mat-icon>
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+
+        <button mat-raised-button color="accent"
+                [disabled]="!selectedCommitSha() || loadingDiff()"
+                (click)="onRestoreClick()"
+                matTooltip="Restore this version to the active SailPoint tenant">
+          <mat-icon>restore</mat-icon>
+          Restore This Version
+        </button>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    @if (loading()) {
+      <div class="loading-row">
+        <mat-spinner diameter="28"></mat-spinner>
+        <span>Loading commit history…</span>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="error-message">
+        <mat-icon>error_outline</mat-icon>
+        {{ errorMessage() }}
+      </div>
+    } @else {
+
+      <!-- Commit selectors -->
+      <div class="commit-selectors">
+        <mat-form-field appearance="outline" class="commit-select">
+          <mat-label>Compare from (base)</mat-label>
+          <mat-select [value]="compareCommitSha()"
+                      (selectionChange)="onCompareSelect($event.value)">
+            @for (entry of commits(); track entry.commit.sha) {
+              <mat-option [value]="entry.commit.sha">
+                <span class="sha-label">{{ entry.commit.sha.slice(0, 7) }}</span>
+                <span class="msg-label">{{ entry.commit.message | slice:0:60 }}</span>
+                <span class="time-label">{{ formatTimestamp(entry.commit.timestamp) }}</span>
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+
+        <mat-form-field appearance="outline" class="commit-select">
+          <mat-label>Compare to (target)</mat-label>
+          <mat-select [value]="selectedCommitSha()"
+                      (selectionChange)="onCommitSelect($event.value)">
+            @for (entry of commits(); track entry.commit.sha) {
+              <mat-option [value]="entry.commit.sha">
+                <span class="sha-label">{{ entry.commit.sha.slice(0, 7) }}</span>
+                <span class="msg-label">{{ entry.commit.message | slice:0:60 }}</span>
+                <span class="time-label">{{ formatTimestamp(entry.commit.timestamp) }}</span>
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Commit timeline -->
+      <div class="commit-timeline">
+        @for (entry of commits(); track entry.commit.sha) {
+          <div class="timeline-entry"
+               [class.selected]="entry.commit.sha === selectedCommitSha()"
+               (click)="onCommitSelect(entry.commit.sha)">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="commit-message">{{ entry.commit.message | slice:0:80 }}</div>
+              <div class="commit-meta">
+                <span class="sha">{{ entry.commit.sha.slice(0, 7) }}</span>
+                <span>{{ entry.commit.author }}</span>
+                <span>{{ formatTimestamp(entry.commit.timestamp) }}</span>
+              </div>
+            </div>
+            @if (entry.commit.sha === selectedCommitSha()) {
+              <button mat-icon-button color="accent"
+                      matTooltip="Restore this version"
+                      (click)="$event.stopPropagation(); onRestoreClick()">
+                <mat-icon>restore</mat-icon>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <!-- Diff area -->
+      @if (loadingDiff()) {
+        <div class="loading-row">
+          <mat-spinner diameter="24"></mat-spinner>
+          <span>Computing diff…</span>
+        </div>
+      } @else if (diffLines().length === 0) {
+        <div class="empty-state small">
+          <mat-icon>check_circle</mat-icon>
+          <p>No changes between the selected commits</p>
+        </div>
+      } @else if (!hasChanges) {
+        <div class="empty-state small">
+          <mat-icon>check_circle</mat-icon>
+          <p>Files are identical</p>
+        </div>
+      } @else {
+
+        @if (viewMode() === 'unified') {
+          <div class="diff-table-wrapper">
+            <table class="diff-table">
+              <tbody>
+                @for (line of diffLines(); track $index) {
+                  <tr [class]="'diff-line diff-' + line.type">
+                    <td class="line-num left-num">{{ line.lineNumberLeft ?? '' }}</td>
+                    <td class="line-num right-num">{{ line.lineNumberRight ?? '' }}</td>
+                    <td class="diff-gutter">
+                      {{ line.type === 'added' ? '+' : line.type === 'removed' ? '-' : ' ' }}
+                    </td>
+                    <td class="diff-content"><pre>{{ line.content }}</pre></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        @if (viewMode() === 'split') {
+          <div class="split-diff">
+            <div class="split-pane">
+              <div class="split-pane-header">
+                Base — {{ compareCommitSha()?.slice(0, 7) }}
+              </div>
+              <table class="diff-table">
+                <tbody>
+                  @for (line of splitLeftLines(); track $index) {
+                    <tr [class]="'diff-line diff-' + line.type">
+                      <td class="line-num">{{ line.lineNumberLeft ?? '' }}</td>
+                      <td class="diff-gutter">{{ line.type === 'removed' ? '-' : ' ' }}</td>
+                      <td class="diff-content"><pre>{{ line.content }}</pre></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="split-pane">
+              <div class="split-pane-header">
+                Target — {{ selectedCommitSha()?.slice(0, 7) }}
+              </div>
+              <table class="diff-table">
+                <tbody>
+                  @for (line of splitRightLines(); track $index) {
+                    <tr [class]="'diff-line diff-' + line.type">
+                      <td class="line-num">{{ line.lineNumberRight ?? '' }}</td>
+                      <td class="diff-gutter">{{ line.type === 'added' ? '+' : ' ' }}</td>
+                      <td class="diff-content"><pre>{{ line.content }}</pre></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+      }
+    }
+
+  </div>
+}
