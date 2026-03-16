@@ -48,11 +48,13 @@
     }
   },
   "files": [
-    "polyfills-test.ts"
+    "polyfills-test.ts",
+    "zone-testing-setup.ts"
   ],
   "include": [
     "**/*.spec.ts",
-    "**/*.d.ts"
+    "**/*.d.ts",
+    "zone-testing-setup.ts"
   ],
   "exclude": [
     "dist",
