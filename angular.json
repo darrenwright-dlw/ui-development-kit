@@ -141,9 +141,7 @@
         "test": {
           "builder": "@angular-builders/jest:run",
           "options": {
-            "polyfills": ["src/polyfills-test.ts"],
-            "tsConfig": "src/tsconfig.spec.json",
-            "globalMocks": ["styleTransform", "matchMedia", "getComputedStyle"]
+            "tsConfig": "src/tsconfig.spec.json"
           }
         },
         "lint": {
