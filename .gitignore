@@ -62,3 +62,5 @@ openapi-generator-cli.jar
 
 .env
 dist/
+.shipmate/tmp/
+.shipmate/logs/
