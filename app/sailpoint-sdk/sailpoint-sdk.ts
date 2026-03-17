@@ -6355,8 +6355,6 @@ export const getSpConfigImportStatus = (requestParameters: sdk.SPConfigV2025ApiG
  */
 export const importSpConfig = (requestParameters: sdk.SPConfigV2025ApiImportSpConfigRequest, apiConfig: sdk.Configuration): Promise<ApiResponse<sdk.SpConfigJobV2025>> => {
     const spconfigv2025api = new sdk.SPConfigV2025Api(apiConfig);
-    // The SDK hardcodes 'Content-Type: multipart/form-data' without the boundary token.
-    // Passing null removes that override so Axios can compute and append the boundary itself.
     return handleApiCall(() => spconfigv2025api.importSpConfig(requestParameters, { headers: { 'Content-Type': null } } as any));
 }
 /**
@@ -8357,16 +8355,18 @@ export const genericDelete = (requestParameters: sdk.DefaultApiGenericDeleteRequ
     const axiosInstance = new sdk.DefaultApi(apiConfig);
     return handleApiCall(() => axiosInstance.genericDelete(requestParameters));
 }
-
-// =============================================================================
+// =========================================================================
 // Patches applied by mustache_templates/postscript.js — do not edit manually.
 // Re-run `npm run build:sdk` to regenerate with these patches applied.
-// =============================================================================
+// =========================================================================
 
-// Override: replace the generated stub with a fetch-based implementation that
-// works correctly in Electron's main process (avoids Axios/FormData boundary
-// issues and handles IPC-cloned File objects that lose their Blob methods).
-createUploadedConfiguration = async (requestParameters: sdk.ConfigurationHubV2025ApiCreateUploadedConfigurationRequest, apiConfig: sdk.Configuration): Promise<ApiResponse<sdk.BackupResponseV2025>> => {
+// Override: replace the generated stub with a fetch-based implementation
+// that works correctly in Electron's main process (avoids Axios/FormData
+// boundary issues and handles IPC-cloned File objects).
+createUploadedConfiguration = async (
+    requestParameters: sdk.ConfigurationHubV2025ApiCreateUploadedConfigurationRequest,
+    apiConfig: sdk.Configuration
+): Promise<ApiResponse<sdk.BackupResponseV2025>> => {
     // Uses fetch() directly to avoid Axios multipart boundary issues in Node.js
     // and IPC Blob serialisation limitations.  Mirrors the restore.mjs approach.
     console.log('[createUploadedConfiguration] Starting upload:', {
@@ -8377,7 +8377,8 @@ createUploadedConfiguration = async (requestParameters: sdk.ConfigurationHubV202
         const anyConfig = apiConfig as any;
         const basePath: string = anyConfig.baseurl || anyConfig.basePath || '';
         console.log('[createUploadedConfiguration] basePath:', basePath);
-        console.log('[createUploadedConfiguration] apiConfig keys:', Object.keys(anyConfig).filter((k: string) => anyConfig[k] != null));
+        console.log('[createUploadedConfiguration] apiConfig keys:',
+            Object.keys(anyConfig).filter((k: string) => anyConfig[k] != null));
 
         let accessToken: string;
         if (anyConfig.accessToken) {
@@ -8431,8 +8432,9 @@ createUploadedConfiguration = async (requestParameters: sdk.ConfigurationHubV202
         const form = new FormData();
         form.append('data', blob, fileName);
         form.append('name', requestParameters.name);
-        console.log('[createUploadedConfiguration] FormData built — file:', fileName, 'size:', blob.size,
-            'bytes, POSTing to:', `${basePath}/v2025/configuration-hub/backups/uploads`);
+        console.log('[createUploadedConfiguration] FormData built — file:', fileName,
+            'size:', blob.size, 'bytes, POSTing to:',
+            `${basePath}/v2025/configuration-hub/backups/uploads`);
 
         const response = await fetch(`${basePath}/v2025/configuration-hub/backups/uploads`, {
             method: 'POST',
