@@ -7,8 +7,7 @@
 
   @if (!result()) {
     <p class="confirm-intro">
-      You are about to restore the following object to the active SailPoint environment.
-      This will overwrite the current version.
+      This will send the object to config hub where the restoration can be completed.
     </p>
 
     <div class="detail-grid">
@@ -48,10 +47,6 @@
       }
     </div>
 
-    <div class="warning-banner">
-      <mat-icon>warning</mat-icon>
-      <span>This action cannot be undone automatically. Ensure you have a current backup before proceeding.</span>
-    </div>
   }
 
   @if (result(); as r) {
