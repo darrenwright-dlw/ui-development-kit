@@ -585,6 +585,16 @@ button.mat-mdc-mini-fab {
   padding-bottom: 0 !important;
 }
 
+// The global `button { border, border-radius }` rule causes doubled/overlapping
+// Reset those properties so Material's own group border is the only one present.
+.mat-button-toggle-button {
+  border: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
 .mat-mdc-paginator-range-actions .mat-mdc-icon-button,
 .mat-mdc-paginator-range-actions .mdc-icon-button {
   border: none !important;
