@@ -134,14 +134,6 @@ export class ConfigService {
             icon: 'dashboard',
             description: 'Manage colab in SailPoint.',
             enabled: false
-        },
-        {
-            name: 'nerm-report',
-            displayName: 'Nerm Report',
-            route: '/nerm-report',
-            icon: 'dashboard',
-            description: 'Manage nerm report in SailPoint.',
-            enabled: false
         }
     ];
 
