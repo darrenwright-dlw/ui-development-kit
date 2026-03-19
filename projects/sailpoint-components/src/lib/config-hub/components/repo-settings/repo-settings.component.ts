@@ -41,7 +41,7 @@ export class RepoSettingsComponent implements OnInit {
     private fb: FormBuilder,
     private gitService: ConfigHubGitService,
     private snackBar: MatSnackBar,
-    @Optional() private dialogRef?: MatDialogRef<RepoSettingsComponent>,
+    @Optional() protected dialogRef?: MatDialogRef<RepoSettingsComponent>,
   ) {}
 
   ngOnInit(): void {
