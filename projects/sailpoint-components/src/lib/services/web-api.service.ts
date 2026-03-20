@@ -64,6 +64,7 @@ export type UpdateEnvironmentRequest = {
   environmentName: string;
   tenantUrl: string;
   baseUrl: string;
+  nermBaseUrl?: string;
   authtype: AuthMethods;
   clientId?: string;
   clientSecret?: string;
@@ -76,6 +77,7 @@ export type Tenant = {
   name: string;
   apiUrl: string;
   tenantUrl: string;
+  nermBaseUrl?: string;
   clientId?: string;
   clientSecret?: string;
   authtype: AuthMethods;
