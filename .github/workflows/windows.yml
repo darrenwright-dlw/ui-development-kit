@@ -37,7 +37,7 @@ jobs:
       shell: powershell
       run: |
         Add-MpPreference -ExclusionPath $env:GITHUB_WORKSPACE
-        Add-MpPreference -ExclusionPath "$env:APPDATA\npm-cache"
+        Add-MpPreference -ExclusionPath (npm config get cache)
 
     - name: Install Dependencies
       run: npm install
