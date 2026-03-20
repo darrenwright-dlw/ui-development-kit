@@ -83,6 +83,7 @@
     "codemirror": "6.0.2",
     "cronstrue": "3.3.0",
     "d3": "7.9.0",
+    "diff": "8.0.3",
     "electron-context-menu": "4.1.0",
     "electron-is-dev": "3.0.1",
     "form-data": "^4.0.0",

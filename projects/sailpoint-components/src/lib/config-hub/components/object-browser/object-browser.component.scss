@@ -1,0 +1,105 @@
+.browser-container {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.type-column {
+  width: 220px;
+  min-width: 180px;
+  // Subtle tint so the column reads as a separate panel in both light and dark
+  background: color-mix(in srgb, var(--theme-primary-text) 5%, var(--theme-background));
+  border-right: 1px solid color-mix(in srgb, var(--theme-primary-text) 15%, transparent);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.object-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 16px;
+  min-height: 48px;
+  background: color-mix(in srgb, var(--theme-primary-text) 8%, var(--theme-background));
+  border-bottom: 1px solid color-mix(in srgb, var(--theme-primary-text) 15%, transparent);
+  flex-shrink: 0;
+}
+
+.column-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--theme-primary-text);
+}
+
+mat-nav-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+// Angular Material's [activated] binding handles selection highlight.
+// No manual .selected override needed.
+
+.commit-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  color: var(--theme-primary-text);
+  opacity: 0.65;
+
+  &.loading {
+    opacity: 0.4;
+  }
+}
+
+.meta-icon {
+  font-size: 13px;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.relative-time {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.commit-author {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spinner-row {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.empty-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--theme-primary-text);
+  opacity: 0.55;
+  font-size: 13px;
+
+  mat-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+  }
+}

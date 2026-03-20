@@ -1,0 +1,59 @@
+.settings-card {
+  max-width: 640px;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.half-width {
+  width: 50%;
+}
+
+.auth-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: color-mix(in srgb, var(--theme-primary) 10%, var(--theme-background));
+  color: var(--theme-primary-text);
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 30%, transparent);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+
+  mat-icon {
+    flex-shrink: 0;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    color: var(--theme-primary);
+  }
+}
+
+.optional-label {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.button-spinner {
+  display: inline-block;
+  margin-right: 8px;
+}
+
+code {
+  font-family: monospace;
+  background: color-mix(in srgb, var(--theme-primary-text) 10%, var(--theme-background));
+  color: var(--theme-primary-text);
+  padding: 1px 4px;
+  border-radius: 3px;
+}

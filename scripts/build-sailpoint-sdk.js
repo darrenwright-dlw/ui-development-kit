@@ -188,6 +188,7 @@ async function buildSdk() {
     console.log('\n========== Generating v2025 SDK ==========');
     executeCommand(`java -jar ${jarPath} generate -i ${API_SPECS_DIR}/idn/sailpoint-api.v2025.yaml -g typescript-axios --global-property skipFormModel=false --config generator-config.yaml --api-name-suffix V2025Api --model-name-suffix V2025`);
 
+
     // Step 6: Generate NERM SDK (writes to temp/nerm/)
     console.log('\n========== Generating NERM SDK ==========');
     const nermSpecPath = `${API_SPECS_DIR}/nerm/openapi.yaml`;
@@ -210,7 +211,12 @@ async function buildSdk() {
     console.log('\nCleaning up temp/nerm/...');
     fs.rmSync(NERM_TEMP_DIR, { recursive: true, force: true });
 
-    console.log('\n✅ SailPoint SDK built successfully (v2025 + NERM)!');
+    // Step 9: Apply targeted patches that cannot be expressed in Mustache templates
+    // (multipart Content-Type fix for importSpConfig; fetch-based override for
+    // createUploadedConfiguration to handle Electron IPC Blob serialisation).
+    executeCommand('node ./mustache_templates/postscript.js');
+
+    console.log('✅ SailPoint SDK built successfully!');
   } catch (error) {
     console.error('Error building SailPoint SDK:', error);
     process.exit(1);

@@ -42,6 +42,12 @@ export interface ElectronAPIInterface {
   listGitHubJsonFiles: (githubRepoUrl: string) => Promise<GitHubFilesResponse>;
   getGitHubFileContent: (downloadUrl: string, filename: string) => Promise<GitHubFileContentResponse>;
 
+  // Config Hub git operations
+  getGitRepoSettings: () => Promise<GitRepoSettings | null>;
+  saveGitRepoSettings: (settings: GitRepoSettings) => Promise<{ success: boolean; error?: string }>;
+  getFileCommitHistory: (owner: string, repo: string, path: string, branch?: string, limit?: number) => Promise<GitCommit[]>;
+  getFileAtRef: (owner: string, repo: string, path: string, ref: string) => Promise<string>;
+
   // Connector deployment
   uploadConnector: (githubRepoUrl: string, connectorAlias?: string) => Promise<ConnectorDeploymentResponse>;
   
@@ -219,6 +225,25 @@ export type CustomizerDeploymentResponse = {
   customizerId?: string;
   version?: number;
   error?: string;
+};
+
+// Config Hub types
+export type AuthMethod = 'pat' | 'ssh';
+
+export type GitRepoSettings = {
+  repoUrl: string;
+  authMethod: AuthMethod;
+  pat?: string;
+  sshKeyPath?: string;
+  defaultBranch: string;
+  backupsPath: string;
+};
+
+export type GitCommit = {
+  sha: string;
+  message: string;
+  author: string;
+  timestamp: string;
 };
 
 @Injectable({
@@ -699,6 +724,54 @@ export class WebApiService implements ElectronAPIInterface, OnDestroy {
       return `https://${this.developerDomain}${avatarTemplate.replace('{size}', '120')}`;
     }
     return avatarTemplate.replace('{size}', '120');
+  }
+
+  // Config Hub git operations
+  async getGitRepoSettings(): Promise<GitRepoSettings | null> {
+    try {
+      return await this.apiCall<GitRepoSettings | null>('config-hub/git-settings', 'GET');
+    } catch {
+      return null;
+    }
+  }
+
+  async saveGitRepoSettings(settings: GitRepoSettings): Promise<{ success: boolean; error?: string }> {
+    try {
+      return await this.apiCall<{ success: boolean; error?: string }>('config-hub/git-settings', 'POST', settings);
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to save settings' };
+    }
+  }
+
+  async getFileCommitHistory(owner: string, repo: string, path: string, branch?: string, limit = 30): Promise<GitCommit[]> {
+    try {
+      const params = new URLSearchParams({ path, per_page: String(limit) });
+      if (branch) params.set('sha', branch);
+      const url = `https://api.github.com/repos/${owner}/${repo}/commits?${params}`;
+      const response = await firstValueFrom(this.http.get<any[]>(url, {
+        headers: { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'SailPoint-UI-Development-Kit' }
+      }));
+      return (response || []).map((c: any) => ({
+        sha: c.sha as string,
+        message: (c.commit?.message as string || '').split('\n')[0],
+        author: (c.commit?.author?.name || c.author?.login || 'Unknown') as string,
+        timestamp: (c.commit?.author?.date || '') as string,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  async getFileAtRef(owner: string, repo: string, path: string, ref: string): Promise<string> {
+    try {
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`;
+      const response = await firstValueFrom(this.http.get<any>(url, {
+        headers: { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'SailPoint-UI-Development-Kit' }
+      }));
+      return atob((response.content as string).replace(/\n/g, ''));
+    } catch {
+      return '';
+    }
   }
 
   // Connector deployment

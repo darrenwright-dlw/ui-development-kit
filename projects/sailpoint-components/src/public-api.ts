@@ -29,5 +29,6 @@ export * from './lib/owner-graph/owner-graph.component';
 export * from './lib/colab/colab.component';
 export * from './lib/colab/components/colab-card/colab-card.component';
 export * from './lib/colab/components/colab-section/colab-section.component';
+export * from './lib/config-hub/config-hub.component';
 export * from './lib/colab/services/discourse.service';
 
