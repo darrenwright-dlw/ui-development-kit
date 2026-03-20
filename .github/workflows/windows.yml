@@ -43,6 +43,12 @@ jobs:
           -Value 1
 
     - name: Install Dependencies
+      # Redirect the npm cache into the workspace so each run starts with a
+      # clean cache directory. The shared C:\npm\cache on Windows runners can
+      # accumulate stale tmp files that trigger a known npm/cacache EEXIST bug
+      # (https://github.com/npm/cli/issues/7308) — a fresh per-run path avoids it.
+      env:
+        NPM_CONFIG_CACHE: ${{ github.workspace }}/.npm-cache
       run: npm install
 
     - name: Install Angular CLI Globally
