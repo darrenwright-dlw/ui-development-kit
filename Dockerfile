@@ -22,7 +22,7 @@ COPY projects ./projects
 COPY src ./src
 
 # Install all dependencies (including dev dependencies for building)
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Build Angular app for web production (same as GitHub Actions)
 RUN npm run build -- -c web-production
