@@ -1,14 +1,10 @@
 /**
  * Configuration controller for the UI Development Kit server
- * Contains configuration-related endpoint implementations
  */
-
 import { Request, Response } from 'express';
 import { ConfigResponse } from '../models/types';
+import { SERVER_CONFIG } from '../config/server.config';
 
-/**
- * Config endpoint
- */
 export const getConfig = (req: Request, res: Response): void => {
   const response: ConfigResponse = {
     version: '1.0.0',
@@ -17,6 +13,12 @@ export const getConfig = (req: Request, res: Response): void => {
       autoRefresh: true
     }
   };
-
   res.json(response);
+};
+
+export const getTenantInfo = (req: Request, res: Response): void => {
+  res.json({
+    tenantUrl: SERVER_CONFIG.tenantUrl,
+    apiUrl: SERVER_CONFIG.apiUrl
+  });
 };

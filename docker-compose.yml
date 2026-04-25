@@ -12,18 +12,16 @@ services:
       # Server Configuration
       NODE_ENV: production
       PORT: 3000
-      
       # Session & JWT
       JWT_SECRET: ${JWT_SECRET:-your-jwt-secret-change-in-production}
       SESSION_SECRET: ${SESSION_SECRET:-your-session-secret-change-in-production}
-      
       # SailPoint OAuth Configuration
       TENANT_URL: ${TENANT_URL}
+      API_URL: ${API_URL}
       CLIENT_ID: ${CLIENT_ID}
       CLIENT_SECRET: ${CLIENT_SECRET}
-      REDIRECT_URI: ${REDIRECT_URI:-http://localhost:3000/oauth/callback}
+      REDIRECT_URI: ${REDIRECT_URI:-http://localhost:3000/api/oauth/callback}
       OAUTH_SCOPES: ${OAUTH_SCOPES:-sp:scopes:all}
-      
       # Optional: Website URL for CORS
       WEBSITE_URL: ${WEBSITE_URL:-http://localhost:3000}
     volumes:

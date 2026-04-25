@@ -92,6 +92,7 @@ app.post('/api/sdk/:methodName', rateLimiter, csrfProtection, sdkController.sdkP
 
 // Config routes
 app.get('/api/config', rateLimiter, configController.getConfig);
+app.get('/api/tenant-info', configController.getTenantInfo);
 
 // Serve static files from Angular build (for Docker/production deployment)
 // Only serve static files if not in Lambda environment

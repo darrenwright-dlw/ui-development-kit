@@ -343,7 +343,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   // Handle auth events from WebAuthComponent
-  handleAuthEvent(event: AuthEvent): void {
+ 
+ handleAuthEvent(event: AuthEvent): void {
     console.log('Auth event received:', event);
     
     if (event.success) {
@@ -354,6 +355,10 @@ export class HomeComponent implements OnInit, OnDestroy {
         connected: true, 
         name: event.username || 'User' 
       });
+
+// Fetch tenant info from server and populate environment subject
+      void this.loadWebEnvironment();
+
       if (event.username) {
         this.showSnackbar(`Successfully authenticated as ${event.username}`);
       }
@@ -365,6 +370,34 @@ export class HomeComponent implements OnInit, OnDestroy {
       if (event.message) {
         this.showSnackbar(event.message);
       }
+    }
+  }
+
+async loadWebEnvironment(): Promise<void> {
+    if (!this.state.isWebMode) return;
+    try {
+      const apiUrl = environment.webApiUrl || '/api';
+      const tenantInfo = await this.http.get<{ tenantUrl: string; apiUrl: string }>(
+        `${apiUrl}/tenant-info`,
+        { withCredentials: true }
+      ).toPromise();
+
+      if (tenantInfo) {
+        // Strip trailing slash and /ui suffix to avoid URL duplication
+        const baseUrl = tenantInfo.tenantUrl
+          .replace(/\/+$/, '')      // remove trailing slashes
+          .replace(/\/ui$/, '');    // remove trailing /ui if present
+
+        this.connectionService.currentEnvironmentSubject$.next({
+          name: baseUrl,
+          apiUrl: tenantInfo.apiUrl,
+          baseUrl: baseUrl,
+          authtype: 'oauth'
+        });
+        console.log('Web environment loaded:', tenantInfo);
+      }
+    } catch (error) {
+      console.error('Error loading web environment:', error);
     }
   }
 
