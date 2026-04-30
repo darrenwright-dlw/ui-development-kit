@@ -58,6 +58,7 @@ const BUILTIN_TOKEN_PATHS_CONFIG: TokenPathsConfig = {
       ['object', 'connectorAttributes', 'password'],
       ['object', 'connectorAttributes', 'sources'],
       ['object', 'owner', 'id'],
+      ['object', 'owner', 'name'],
     ],
     SERVICE_DESK_INTEGRATION: [
       ['object', 'attributes', 'url'],
@@ -65,8 +66,11 @@ const BUILTIN_TOKEN_PATHS_CONFIG: TokenPathsConfig = {
       ['object', 'attributes', 'username'],
       ['object', 'attributes', 'requesterSource'],
       ['object', 'clusterRef', 'id'],
+      ['object', 'clusterRef', 'name'],
       ['object', 'ownerRef', 'id'],
+      ['object', 'ownerRef', 'name'],
       ['object', 'beforeProvisioningRule', 'id'],
+      ['object', 'beforeProvisioningRule', 'name'],
     ],
     AUTH_ORG: [
       ['object', 'orgConfig', 'domain'],
@@ -77,25 +81,46 @@ const BUILTIN_TOKEN_PATHS_CONFIG: TokenPathsConfig = {
     ],
     IDENTITY_PROFILE: [
       ['object', 'authoritativeSource', 'id'],
+      ['object', 'authoritativeSource', 'name'],
       ['object', 'owner', 'id'],
+      ['object', 'owner', 'name'],
     ],
     LIFECYCLE_STATE: [
       ['object', 'identityProfileRef', 'id'],
+      ['object', 'identityProfileRef', 'name'],
     ],
     ACCESS_PROFILE: [
       ['object', 'owner', 'id'],
+      ['object', 'owner', 'name'],
       ['object', 'source', 'id'],
+      ['object', 'source', 'name'],
     ],
-    ROLE:             [['object', 'owner', 'id']],
-    GOVERNANCE_GROUP: [['object', 'owner', 'id']],
-    SEGMENT:          [['object', 'owner', 'id']],
+    ROLE: [
+      ['object', 'owner', 'id'],
+      ['object', 'owner', 'name'],
+    ],
+    GOVERNANCE_GROUP: [
+      ['object', 'owner', 'id'],
+      ['object', 'owner', 'name'],
+    ],
+    SEGMENT: [
+      ['object', 'owner', 'id'],
+      ['object', 'owner', 'name'],
+    ],
     SOD_POLICY: [
       ['object', 'externalPolicyReference'],
       ['object', 'ownerRef', 'id'],
+      ['object', 'ownerRef', 'name'],
     ],
-    WORKFLOW:             [['object', 'owner', 'id']],
+    WORKFLOW: [
+      ['object', 'owner', 'id'],
+      ['object', 'owner', 'name'],
+    ],
     TRIGGER_SUBSCRIPTION: [['object', 'workflowConfig', 'workflowId']],
-    FORM_DEFINITION:      [['object', 'owner', 'id']],
+    FORM_DEFINITION: [
+      ['object', 'owner', 'id'],
+      ['object', 'owner', 'name'],
+    ],
   },
 };
 
