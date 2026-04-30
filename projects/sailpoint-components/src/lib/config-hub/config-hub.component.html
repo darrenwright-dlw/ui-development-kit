@@ -44,7 +44,6 @@
   <div class="workspace" [class.workspace-no-settings]="!hasSettings()">
 
     @if (viewMode() === 'object') {
-      <!-- By Object: type browser + diff viewer -->
       <div class="browser-pane">
         <app-object-browser (objectSelected)="onObjectSelected($event)">
         </app-object-browser>
@@ -58,7 +57,6 @@
     }
 
     @if (viewMode() === 'commit') {
-      <!-- By Commit: commit timeline + object list + inline diff -->
       <app-commit-browser
         class="commit-browser-host"
         (restoreRequested)="onCommitRestoreRequested($event)">

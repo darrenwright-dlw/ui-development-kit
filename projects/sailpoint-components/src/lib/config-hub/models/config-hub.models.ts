@@ -7,6 +7,8 @@ export interface GitRepoSettings {
   sshKeyPath?: string;
   defaultBranch: string;
   backupsPath: string;
+  /** Path to environment variable files, e.g. "vars". Default: "vars". */
+  varsPath: string;
 }
 
 export interface GitCommit {

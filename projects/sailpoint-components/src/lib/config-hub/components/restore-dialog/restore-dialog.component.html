@@ -9,15 +9,16 @@
     <p class="confirm-intro">
       @if (isBundle) {
         This will upload <strong>{{ data.bundle!.length }} object(s)</strong> to Config Hub and wait for processing to complete.
+      } @else if (useEnvSubstitution) {
+        This will remap environment-specific values to <strong>{{ selectedTargetTenant() }}</strong> before uploading to Config Hub.
       } @else {
         This will upload the selected version to Config Hub and wait for processing to complete.
       }
     </p>
 
+    <!-- Object / bundle details -->
     <div class="detail-grid">
-
       @if (!isBundle) {
-        <!-- Single-object details -->
         <div class="detail-row">
           <span class="detail-label">Type</span>
           <span class="detail-value type-chip">{{ data.object!.objectType }}</span>
@@ -27,11 +28,28 @@
           <span class="detail-value">{{ data.object!.name }}</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Object ID</span>
-          <span class="detail-value mono">{{ data.object!.objectId }}</span>
+          <span class="detail-label">Commit</span>
+          <span class="detail-value mono">{{ data.commitSha.slice(0, 7) }}</span>
         </div>
+        @if (data.commitMessage) {
+          <div class="detail-row">
+            <span class="detail-label">Message</span>
+            <span class="detail-value">{{ data.commitMessage }}</span>
+          </div>
+        }
+        @if (data.commitAuthor) {
+          <div class="detail-row">
+            <span class="detail-label">Author</span>
+            <span class="detail-value">{{ data.commitAuthor }}</span>
+          </div>
+        }
+        @if (data.commitTimestamp) {
+          <div class="detail-row">
+            <span class="detail-label">Date</span>
+            <span class="detail-value">{{ formatTimestamp(data.commitTimestamp) }}</span>
+          </div>
+        }
       } @else {
-        <!-- Multi-object: list affected objects -->
         <div class="detail-row">
           <span class="detail-label">Objects</span>
           <div class="detail-value affected-list">
@@ -43,31 +61,129 @@
             }
           </div>
         </div>
-      }
-
-      <div class="detail-row">
-        <span class="detail-label">Commit</span>
-        <span class="detail-value mono">{{ data.commitSha.slice(0, 7) }}</span>
-      </div>
-      @if (data.commitMessage) {
         <div class="detail-row">
-          <span class="detail-label">Message</span>
-          <span class="detail-value">{{ data.commitMessage }}</span>
-        </div>
-      }
-      @if (data.commitAuthor) {
-        <div class="detail-row">
-          <span class="detail-label">Author</span>
-          <span class="detail-value">{{ data.commitAuthor }}</span>
-        </div>
-      }
-      @if (data.commitTimestamp) {
-        <div class="detail-row">
-          <span class="detail-label">Date</span>
-          <span class="detail-value">{{ formatTimestamp(data.commitTimestamp) }}</span>
+          <span class="detail-label">Commit</span>
+          <span class="detail-value mono">{{ data.commitSha.slice(0, 7) }}</span>
         </div>
       }
     </div>
+
+    <!-- ── Apply to a Different Environment ── single-object only -->
+    @if (showEnvSubstitution) {
+      <div class="env-section">
+
+        <!-- Toggle -->
+        <div class="env-header">
+          <mat-slide-toggle
+            [(ngModel)]="useEnvSubstitution"
+            (ngModelChange)="onUseEnvToggle($event)"
+            [disabled]="loadingMeta()">
+            Apply to a different environment
+          </mat-slide-toggle>
+          @if (loadingMeta()) {
+            <mat-spinner diameter="16"></mat-spinner>
+          }
+        </div>
+
+        <div class="env-body" *ngIf="useEnvSubstitution">
+
+            <!-- Source → Target row -->
+            <div class="env-flow-row">
+              <div class="env-flow-item source">
+                <span class="env-flow-label">Source</span>
+                <span class="env-flow-value">{{ sourceTenant() ?? 'unknown' }}</span>
+              </div>
+              <mat-icon class="env-flow-arrow">arrow_forward</mat-icon>
+              <div class="env-flow-item target">
+                <span class="env-flow-label">Target</span>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="target-select">
+                  <mat-select
+                    [value]="selectedTargetTenant()"
+                    (selectionChange)="onTargetTenantChange($event.value)"
+                    [disabled]="targetTenants().length === 0"
+                    placeholder="Select environment">
+                    @for (t of targetTenants(); track t) {
+                      <mat-option [value]="t">{{ t }}</mat-option>
+                    }
+                    @if (targetTenants().length === 0) {
+                      <mat-option disabled>No vars files found</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Vars directory not in repo yet -->
+            @if (!loadingMeta() && targetTenants().length === 0) {
+              <div class="env-notice warn">
+                <mat-icon>folder_off</mat-icon>
+                <span>
+                  No vars files found in the configured <strong>Vars Path</strong>.
+                  Commit your <code>.vars.yaml</code> files to the repo, or run
+                  <code>npm run tokenize find-tokens</code> to generate them.
+                </span>
+              </div>
+            }
+
+            <!-- Source vars not found warning -->
+            @if (!loadingMeta() && !sourceTenant()) {
+              <div class="env-notice warn">
+                <mat-icon>warning</mat-icon>
+                <span>Cannot detect source environment — check your Backups Path setting.</span>
+              </div>
+            } @else if (!loadingMeta() && sourceVarsEmpty && sourceTenant()) {
+              <div class="env-notice warn">
+                <mat-icon>info</mat-icon>
+                <span>No vars file found for <strong>{{ sourceTenant() }}</strong>.
+                  Run <code>npm run tokenize find-tokens</code> to generate one.</span>
+              </div>
+            }
+
+            <!-- Substitution preview -->
+            @if (loadingPreview()) {
+              <div class="env-notice loading">
+                <mat-spinner diameter="16"></mat-spinner>
+                <span>Computing substitution preview…</span>
+              </div>
+            } @else if (preview(); as p) {
+              @if (p.remapped.length === 0 && p.unmapped.length === 0) {
+                <div class="env-notice ok">
+                  <mat-icon>check_circle</mat-icon>
+                  <span>
+                    @if (sourceVarsEmpty) {
+                      No vars file — object will be restored as-is.
+                    } @else {
+                      No environment-specific values differ between these two environments.
+                    }
+                  </span>
+                </div>
+              } @else {
+                <div class="env-notice" [class.ok]="p.unmapped.length === 0" [class.warn]="p.unmapped.length > 0">
+                  <mat-icon>{{ p.unmapped.length === 0 ? 'swap_horiz' : 'warning' }}</mat-icon>
+                  <span>
+                    <strong>{{ p.remapped.length }}</strong>
+                    field{{ p.remapped.length !== 1 ? 's' : '' }} will be remapped
+                    @if (p.unmapped.length > 0) {
+                      &mdash; <strong>{{ p.unmapped.length }}</strong> token{{ p.unmapped.length !== 1 ? 's' : '' }} missing from target vars
+                    }
+                  </span>
+                </div>
+                @if (p.unmapped.length > 0) {
+                  <div class="unmapped-list">
+                    <p class="unmapped-label">Add these tokens to <code>{{ selectedTargetTenant() }}.vars.yaml</code>:</p>
+                    <div class="token-chip-list">
+                      @for (t of p.unmapped; track t) {
+                        <code class="token-pill">{{ t }}</code>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            }
+
+          </div>
+      </div>
+    }
   }
 
   @if (restoring()) {
@@ -91,15 +207,22 @@
 <mat-dialog-actions align="end">
   @if (!result()) {
     <button mat-button (click)="onClose()" [disabled]="restoring()">Cancel</button>
-    <button mat-raised-button color="warn"
+    <button mat-raised-button
+            [color]="hasUnmapped ? 'accent' : 'warn'"
             (click)="onConfirm()"
-            [disabled]="restoring()">
+            [disabled]="restoring() || (useEnvSubstitution && !substitutionReady)">
       @if (restoring()) {
         <mat-spinner diameter="18"></mat-spinner>
       } @else {
         <mat-icon>restore</mat-icon>
       }
-      Restore
+      @if (useEnvSubstitution && !substitutionReady && !restoring()) {
+        Select a target environment
+      } @else if (hasUnmapped) {
+        Restore Anyway
+      } @else {
+        Restore
+      }
     </button>
   } @else {
     <button mat-raised-button (click)="onClose()">Close</button>

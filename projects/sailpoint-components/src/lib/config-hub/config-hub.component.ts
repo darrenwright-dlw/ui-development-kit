@@ -80,7 +80,7 @@ export class ConfigHubComponent implements OnInit {
     });
   }
 
-  /** Fired by DiffViewerComponent when the user clicks "Restore This Version" (single object). */
+  /** Fired by DiffViewerComponent when the user clicks "Restore This Version". */
   onRestoreRequested(event: { object: BackupObject; content: any; commitSha: string }): void {
     const data: RestoreDialogData = {
       object: event.object,
