@@ -125,20 +125,6 @@
               </div>
             }
 
-            <!-- Source vars not found warning -->
-            @if (!loadingMeta() && !sourceTenant()) {
-              <div class="env-notice warn">
-                <mat-icon>warning</mat-icon>
-                <span>Cannot detect source environment — check your Backups Path setting.</span>
-              </div>
-            } @else if (!loadingMeta() && sourceVarsEmpty && sourceTenant()) {
-              <div class="env-notice warn">
-                <mat-icon>info</mat-icon>
-                <span>No vars file found for <strong>{{ sourceTenant() }}</strong>.
-                  Run <code>npm run tokenize find-tokens</code> to generate one.</span>
-              </div>
-            }
-
             <!-- Substitution preview -->
             @if (loadingPreview()) {
               <div class="env-notice loading">
@@ -149,13 +135,7 @@
               @if (p.remapped.length === 0 && p.unmapped.length === 0) {
                 <div class="env-notice ok">
                   <mat-icon>check_circle</mat-icon>
-                  <span>
-                    @if (sourceVarsEmpty) {
-                      No vars file — object will be restored as-is.
-                    } @else {
-                      No environment-specific values differ between these two environments.
-                    }
-                  </span>
+                  <span>All tokenizable fields already match the target environment.</span>
                 </div>
               } @else {
                 <div class="env-notice" [class.ok]="p.unmapped.length === 0" [class.warn]="p.unmapped.length > 0">

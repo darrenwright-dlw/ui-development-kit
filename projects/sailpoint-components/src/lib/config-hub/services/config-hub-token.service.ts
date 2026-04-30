@@ -1,13 +1,105 @@
 import { Injectable } from '@angular/core';
 
+// ── Public types ──────────────────────────────────────────────────────────────
+
 export interface SubstitutionPreview {
-  /** Token names whose source value was found in the content AND differs in the target. */
+  /** Token names whose backup value differs from the target vars value (will be replaced). */
   remapped: string[];
-  /** Token names whose source value was found in the content but missing in the target vars. */
+  /** Tokenizable fields for this object whose token is absent from the target vars. */
   unmapped: string[];
-  /** Tokens found in source vars that were not present in this specific backup object. */
-  notApplicable: string[];
 }
+
+/**
+ * Shape of the token-paths.json file stored in the repo.
+ * typeAbbreviations: short prefix per ISC object type (e.g. "ROLE", "SRC", "WF").
+ * tokenizablePaths: array of JSON-path arrays per object type.
+ */
+export interface TokenPathsConfig {
+  typeAbbreviations: Record<string, string>;
+  tokenizablePaths: Record<string, Array<(string | number)[]>>;
+}
+
+// ── Built-in fallback (mirrors token-paths.json) ─────────────────────────────
+
+const BUILTIN_TOKEN_PATHS_CONFIG: TokenPathsConfig = {
+  typeAbbreviations: {
+    ACCESS_PROFILE:           'AP',
+    AUTH_ORG:                 'AUTH',
+    CONNECTOR_RULE:           'RULE',
+    FORM_DEFINITION:          'FORM',
+    GOVERNANCE_GROUP:         'GG',
+    IDENTITY_OBJECT_CONFIG:   'IOC',
+    IDENTITY_PROFILE:         'IP',
+    LIFECYCLE_STATE:          'LC',
+    NOTIFICATION_TEMPLATE:    'NT',
+    PASSWORD_POLICY:          'PP',
+    ROLE:                     'ROLE',
+    SEGMENT:                  'SEG',
+    SERVICE_DESK_INTEGRATION: 'SDIM',
+    SOD_POLICY:               'SOD',
+    SOURCE:                   'SRC',
+    TAG:                      'TAG',
+    TRANSFORM:                'XFORM',
+    TRIGGER_SUBSCRIPTION:     'TRIG',
+    WORKFLOW:                 'WF',
+  },
+  tokenizablePaths: {
+    SOURCE: [
+      ['object', 'connectorAttributes', 'spConnectorInstanceId'],
+      ['object', 'connectorAttributes', 'spConnectorSpecId'],
+      ['object', 'connectorAttributes', 'host'],
+      ['object', 'connectorAttributes', 'token'],
+      ['object', 'connectorAttributes', 'clientId'],
+      ['object', 'connectorAttributes', 'clientSecret'],
+      ['object', 'connectorAttributes', 'url'],
+      ['object', 'connectorAttributes', 'user'],
+      ['object', 'connectorAttributes', 'baseurl'],
+      ['object', 'connectorAttributes', 'username'],
+      ['object', 'connectorAttributes', 'password'],
+      ['object', 'connectorAttributes', 'sources'],
+      ['object', 'owner', 'id'],
+    ],
+    SERVICE_DESK_INTEGRATION: [
+      ['object', 'attributes', 'url'],
+      ['object', 'attributes', 'tokenUrl'],
+      ['object', 'attributes', 'username'],
+      ['object', 'attributes', 'requesterSource'],
+      ['object', 'clusterRef', 'id'],
+      ['object', 'ownerRef', 'id'],
+      ['object', 'beforeProvisioningRule', 'id'],
+    ],
+    AUTH_ORG: [
+      ['object', 'orgConfig', 'domain'],
+      ['object', 'tenant'],
+      ['object', 'serviceProviderConfig', 'federationProtocolDetails', 0, 'alias'],
+      ['object', 'serviceProviderConfig', 'federationProtocolDetails', 0, 'callbackUrl'],
+      ['object', 'serviceProviderConfig', 'federationProtocolDetails', 0, 'entityId'],
+    ],
+    IDENTITY_PROFILE: [
+      ['object', 'authoritativeSource', 'id'],
+      ['object', 'owner', 'id'],
+    ],
+    LIFECYCLE_STATE: [
+      ['object', 'identityProfileRef', 'id'],
+    ],
+    ACCESS_PROFILE: [
+      ['object', 'owner', 'id'],
+      ['object', 'source', 'id'],
+    ],
+    ROLE:             [['object', 'owner', 'id']],
+    GOVERNANCE_GROUP: [['object', 'owner', 'id']],
+    SEGMENT:          [['object', 'owner', 'id']],
+    SOD_POLICY: [
+      ['object', 'externalPolicyReference'],
+      ['object', 'ownerRef', 'id'],
+    ],
+    WORKFLOW:             [['object', 'owner', 'id']],
+    TRIGGER_SUBSCRIPTION: [['object', 'workflowConfig', 'workflowId']],
+    FORM_DEFINITION:      [['object', 'owner', 'id']],
+  },
+};
+
+// ── Service ───────────────────────────────────────────────────────────────────
 
 @Injectable({ providedIn: 'root' })
 export class ConfigHubTokenService {
@@ -20,7 +112,6 @@ export class ConfigHubTokenService {
    *   KEY: "string value"
    *   KEY:
    *     - "item1"
-   *     - "item2"
    */
   parseVarsYaml(content: string): Record<string, string | string[]> {
     const vars: Record<string, string | string[]> = {};
@@ -63,91 +154,124 @@ export class ConfigHubTokenService {
     return vars;
   }
 
-  // ── Value-based substitution (no templates required) ─────────────────────
+  // ── Path-based substitution ───────────────────────────────────────────────
+  //
+  // This approach mirrors the Node.js scripts: it uses token-paths.json to
+  // identify which fields to replace, derives the token name from the object
+  // type + name + field path, and looks up the target value directly in the
+  // target vars file.  It does NOT need a "source vars" file — the current
+  // backup value is read from the backup JSON itself.
+  //
+  // This is more robust than value-based substitution because it works even
+  // when the source vars file is stale (i.e. the backup was updated after the
+  // vars were last generated).
 
   /**
-   * Preview how many fields would be remapped when applying sourceVars → targetVars
-   * to a backup object.  Does NOT modify the content.
-   *
-   * For each token in sourceVars:
-   *   - If the source value is present in the content JSON:
-   *       - remapped  → target has a different value (will be swapped)
-   *       - unmapped  → token is missing from target vars (can't be swapped)
-   *   - If not present → notApplicable (token is for a different object type)
+   * Build a human-readable ALL_CAPS_SNAKE token name for a single field,
+   * mirroring the naming convention in token-utils.mjs:
+   *   {TYPE_ABBR}_{OBJECT_NAME}_{FIELD_SUFFIX}
+   * e.g.  ROLE_SALESENGINEERING_OWNER_ID
    */
-  computeSubstitutionPreview(
+  buildTokenName(
+    config: TokenPathsConfig,
+    objectType: string,
+    objectName: string,
+    fieldPath: (string | number)[],
+  ): string {
+    const typeAbbr = config.typeAbbreviations[objectType] ?? objectType.slice(0, 4).toUpperCase();
+    const namePrefix = this.nameToPrefix(objectName);
+    const suffix = this.fieldSuffix(fieldPath);
+    return `${typeAbbr}_${namePrefix}_${suffix}`;
+  }
+
+  /**
+   * Preview which fields would change when restoring the backup to the target
+   * environment described by targetVars.
+   *
+   * Only covers the static paths defined in token-paths.json (same as the
+   * Node.js scripts).  Dynamic paths (workflow step attributes, lifecycle-state
+   * account-action source IDs, etc.) are not evaluated here.
+   */
+  computePathBasedPreview(
     content: any,
-    sourceVars: Record<string, string | string[]>,
+    objectType: string,
+    objectName: string,
+    config: TokenPathsConfig,
     targetVars: Record<string, string | string[]>,
   ): SubstitutionPreview {
-    const jsonStr = JSON.stringify(content);
+    const paths = config.tokenizablePaths[objectType] ?? [];
     const remapped: string[] = [];
     const unmapped: string[] = [];
-    const notApplicable: string[] = [];
 
-    for (const [token, sourceValue] of Object.entries(sourceVars)) {
-      const srcJsonVal = this.toJsonValue(sourceValue);
-      if (!jsonStr.includes(srcJsonVal)) {
-        notApplicable.push(token);
+    for (const path of paths) {
+      const currentValue = this.getValueAtPath(content, path);
+      if (currentValue === undefined || currentValue === null || currentValue === '') continue;
+
+      const tokenName = this.buildTokenName(config, objectType, objectName, path);
+      const targetValue = targetVars[tokenName];
+
+      if (targetValue === undefined) {
+        unmapped.push(tokenName);
         continue;
       }
 
-      const targetValue = targetVars[token];
-      if (targetValue === undefined) {
-        unmapped.push(token);
-      } else if (this.toJsonValue(targetValue) !== srcJsonVal) {
-        remapped.push(token);
+      const currentStr = Array.isArray(currentValue) ? JSON.stringify(currentValue) : String(currentValue);
+      const targetStr  = Array.isArray(targetValue)  ? JSON.stringify(targetValue)  : String(targetValue);
+      if (currentStr !== targetStr) {
+        remapped.push(tokenName);
       }
-      // else: same value in both — silently skip
+      // else: same value — token is fine, no action needed
     }
 
-    return { remapped, unmapped, notApplicable };
+    return { remapped, unmapped };
   }
 
   /**
-   * Apply source→target value substitution to a backup object.
-   * For every token shared between sourceVars and targetVars where the values
-   * differ, the source value is replaced with the target value in the JSON.
+   * Apply target environment values to a backup object using path-based
+   * substitution.  Returns a deep clone with the replaced fields, plus lists
+   * of which tokens were remapped and which were missing from targetVars.
    */
-  applyVarsSubstitution(
+  applyPathBasedSubstitution(
     content: any,
-    sourceVars: Record<string, string | string[]>,
+    objectType: string,
+    objectName: string,
+    config: TokenPathsConfig,
     targetVars: Record<string, string | string[]>,
   ): { resolved: any; remapped: string[]; unmapped: string[] } {
-    let jsonStr = JSON.stringify(content);
+    const paths = config.tokenizablePaths[objectType] ?? [];
+    const resolved = JSON.parse(JSON.stringify(content));
     const remapped: string[] = [];
     const unmapped: string[] = [];
 
-    for (const [token, sourceValue] of Object.entries(sourceVars)) {
-      const srcJsonVal = this.toJsonValue(sourceValue);
-      if (!jsonStr.includes(srcJsonVal)) continue; // Not applicable to this object
+    for (const path of paths) {
+      const currentValue = this.getValueAtPath(content, path);
+      if (currentValue === undefined || currentValue === null || currentValue === '') continue;
 
-      const targetValue = targetVars[token];
+      const tokenName = this.buildTokenName(config, objectType, objectName, path);
+      const targetValue = targetVars[tokenName];
+
       if (targetValue === undefined) {
-        unmapped.push(token);
+        unmapped.push(tokenName);
         continue;
       }
 
-      const tgtJsonVal = this.toJsonValue(targetValue);
-      if (srcJsonVal === tgtJsonVal) continue; // Same in both envs
+      const currentStr = Array.isArray(currentValue) ? JSON.stringify(currentValue) : String(currentValue);
+      const targetStr  = Array.isArray(targetValue)  ? JSON.stringify(targetValue)  : String(targetValue);
+      if (currentStr === targetStr) continue; // Already correct
 
-      jsonStr = jsonStr.split(srcJsonVal).join(tgtJsonVal);
-      remapped.push(token);
+      this.setValueAtPath(resolved, path, Array.isArray(targetValue) ? [...targetValue] : String(targetValue));
+      remapped.push(tokenName);
     }
 
-    return { resolved: JSON.parse(jsonStr), remapped, unmapped };
+    return { resolved, remapped, unmapped };
   }
 
-  /**
-   * Serialize a vars value to its JSON representation so it can be found and
-   * replaced in a JSON string.  Arrays are serialized as JSON arrays; scalars
-   * as JSON strings (with quotes).
-   */
-  private toJsonValue(value: string | string[]): string {
-    return Array.isArray(value) ? JSON.stringify(value) : JSON.stringify(String(value));
+  /** Return the built-in defaults when the repo has no token-paths.json. */
+  getBuiltinConfig(): TokenPathsConfig {
+    return BUILTIN_TOKEN_PATHS_CONFIG;
   }
 
-  // ── Token placeholder helpers (kept for any future template use) ──────────
+  // ── Token placeholder helpers ─────────────────────────────────────────────
 
   extractTokenNames(obj: any): string[] {
     const jsonStr = JSON.stringify(obj);
@@ -157,5 +281,55 @@ export class ConfigHubTokenService {
 
   formatToken(name: string): string {
     return `{{${name}}}`;
+  }
+
+  // ── Private helpers ───────────────────────────────────────────────────────
+
+  /**
+   * Convert a display name to UPPER_SNAKE_CASE, mirroring nameToPrefix() in
+   * token-utils.mjs.  e.g. "SalesEngineering" → "SALESENGINEERING"
+   */
+  private nameToPrefix(name: string): string {
+    return String(name)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+  }
+
+  /**
+   * Derive the field-name suffix from the tail of a path, mirroring
+   * fieldSuffix() in token-utils.mjs.
+   * When the last key is "id" or "name", prepend the parent so the result is
+   * e.g. "OWNER_ID" / "OWNER_NAME" rather than the ambiguous "ID" / "NAME".
+   */
+  private fieldSuffix(path: (string | number)[]): string {
+    const lastSeg = path[path.length - 1];
+    const lastKey = String(lastSeg).toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+    if ((lastKey === 'ID' || lastKey === 'NAME') && path.length >= 2) {
+      const parentKey = String(path[path.length - 2]).toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+      return `${parentKey}_${lastKey}`;
+    }
+    return lastKey;
+  }
+
+  private getValueAtPath(obj: any, path: (string | number)[]): any {
+    let cur = obj;
+    for (const key of path) {
+      if (cur === null || cur === undefined) return undefined;
+      cur = cur[key];
+    }
+    return cur;
+  }
+
+  private setValueAtPath(obj: any, path: (string | number)[], value: any): void {
+    let cur = obj;
+    for (let i = 0; i < path.length - 1; i++) {
+      const key = path[i];
+      if (cur[key] === undefined || cur[key] === null) {
+        cur[key] = typeof path[i + 1] === 'number' ? [] : {};
+      }
+      cur = cur[key];
+    }
+    cur[path[path.length - 1]] = value;
   }
 }

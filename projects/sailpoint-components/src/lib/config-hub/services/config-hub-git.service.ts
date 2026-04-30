@@ -224,6 +224,31 @@ export class ConfigHubGitService {
   }
 
   /**
+   * Fetch and parse token-paths.json from the repo root.
+   * Returns null if the file is absent (callers should fall back to the
+   * built-in defaults via ConfigHubTokenService.getBuiltinConfig()).
+   */
+  async getTokenPathsConfig(): Promise<{
+    typeAbbreviations: Record<string, string>;
+    tokenizablePaths: Record<string, Array<(string | number)[]>>;
+  } | null> {
+    const s = this.settings();
+    if (!s) return null;
+    const { owner, repo } = this.parseRepoUrl(s.repoUrl);
+    if (!owner || !repo) return null;
+    try {
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/token-paths.json?ref=${encodeURIComponent(s.defaultBranch)}`;
+      const res = await fetch(url, { headers: this.githubHeaders(s) });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const content = atob((data.content as string).replace(/\n/g, ''));
+      return JSON.parse(content);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Fetch the raw YAML content of a tenant vars file.
    * @param tenant  e.g. "production"  (without .vars.yaml extension)
    */

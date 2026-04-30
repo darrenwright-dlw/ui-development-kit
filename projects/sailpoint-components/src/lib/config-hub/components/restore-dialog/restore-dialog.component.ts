@@ -12,7 +12,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ConfigHubApiService } from '../../services/config-hub-api.service';
 import { ConfigHubGitService } from '../../services/config-hub-git.service';
-import { ConfigHubTokenService, SubstitutionPreview } from '../../services/config-hub-token.service';
+import { ConfigHubTokenService, SubstitutionPreview, TokenPathsConfig } from '../../services/config-hub-token.service';
 import { BackupObject, RestoreResult } from '../../models/config-hub.models';
 
 export interface RestoreDialogData {
@@ -76,9 +76,14 @@ export class RestoreDialogComponent implements OnInit {
   targetTenants = signal<string[]>([]);
   selectedTargetTenant = signal<string | null>(null);
 
-  /** Cached parsed vars, loaded when target is selected. */
-  sourceVars: Record<string, string | string[]> = {};
+  /** token-paths.json loaded from the repo (or built-in defaults). */
+  private tokenPathsConfig: TokenPathsConfig | null = null;
+
+  /** Parsed vars for the selected target environment. */
   private targetVars: Record<string, string | string[]> = {};
+
+  /** @deprecated kept for template access only; path-based substitution no longer needs this. */
+  sourceVars: Record<string, string | string[]> = {};
 
   preview = signal<SubstitutionPreview | null>(null);
   loadingMeta = signal(false);
@@ -98,9 +103,9 @@ export class RestoreDialogComponent implements OnInit {
     return (this.preview()?.unmapped.length ?? 0) > 0;
   }
 
-  /** Used in template because Object is not in Angular's template scope. */
-  get sourceVarsEmpty(): boolean {
-    return Object.keys(this.sourceVars).length === 0;
+  /** True once token-paths.json (or built-in fallback) is loaded. */
+  get configReady(): boolean {
+    return this.tokenPathsConfig !== null;
   }
 
   ngOnInit(): void {
@@ -115,19 +120,19 @@ export class RestoreDialogComponent implements OnInit {
     const sourceTenant = this.gitService.getSourceVarsTenant();
     this.sourceTenant.set(sourceTenant);
 
-    const [tenants, sourceRaw] = await Promise.all([
+    // Fetch vars tenants and token-paths.json in parallel.
+    const [tenants, tokenPathsFromRepo] = await Promise.all([
       this.gitService.getVarsTenants(),
-      sourceTenant ? this.gitService.getVarsFile(sourceTenant) : Promise.resolve(''),
+      this.gitService.getTokenPathsConfig(),
     ]);
 
     this.targetTenants.set(tenants);
-    if (sourceRaw) {
-      this.sourceVars = this.tokenService.parseVarsYaml(sourceRaw);
-    }
+    // Use repo's token-paths.json if available, otherwise fall back to built-in defaults.
+    this.tokenPathsConfig = tokenPathsFromRepo ?? this.tokenService.getBuiltinConfig();
 
     this.loadingMeta.set(false);
 
-    // If there's only one other tenant, auto-select it.
+    // If exactly one other tenant exists, auto-select it.
     const others = tenants.filter(t => t !== sourceTenant);
     if (others.length === 1) {
       await this.onTargetTenantChange(others[0]);
@@ -150,11 +155,18 @@ export class RestoreDialogComponent implements OnInit {
     const raw = await this.gitService.getVarsFile(tenant);
     this.targetVars = raw ? this.tokenService.parseVarsYaml(raw) : {};
 
-    if (Object.keys(this.sourceVars).length > 0 && this.data.content) {
+    const content = this.data.content;
+    const config = this.tokenPathsConfig;
+    const objectType = content?.self?.type ?? this.data.object?.objectType ?? '';
+    const objectName = content?.self?.name ?? '';
+
+    if (config && content && objectType && objectName) {
       this.preview.set(
-        this.tokenService.computeSubstitutionPreview(
-          this.data.content,
-          this.sourceVars,
+        this.tokenService.computePathBasedPreview(
+          content,
+          objectType,
+          objectName,
+          config,
           this.targetVars,
         )
       );
@@ -173,10 +185,15 @@ export class RestoreDialogComponent implements OnInit {
       );
     } else {
       let content = this.data.content;
-      if (this.useEnvSubstitution && Object.keys(this.sourceVars).length > 0) {
-        content = this.tokenService.applyVarsSubstitution(
+      const config = this.tokenPathsConfig;
+      const objectType = content?.self?.type ?? this.data.object?.objectType ?? '';
+      const objectName = content?.self?.name ?? '';
+      if (this.useEnvSubstitution && config && objectType && objectName) {
+        content = this.tokenService.applyPathBasedSubstitution(
           content,
-          this.sourceVars,
+          objectType,
+          objectName,
+          config,
           this.targetVars,
         ).resolved;
       }
