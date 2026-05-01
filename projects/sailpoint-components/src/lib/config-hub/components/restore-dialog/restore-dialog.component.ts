@@ -157,8 +157,7 @@ export class RestoreDialogComponent implements OnInit {
 
     const content = this.data.content;
     const config = this.tokenPathsConfig;
-    const objectType = content?.self?.type ?? this.data.object?.objectType ?? '';
-    const objectName = content?.self?.name ?? '';
+    const { objectType, objectName } = this.getRestoreObjectIdentity(content);
 
     if (config && content && objectType && objectName) {
       this.preview.set(
@@ -186,8 +185,7 @@ export class RestoreDialogComponent implements OnInit {
     } else {
       let content = this.data.content;
       const config = this.tokenPathsConfig;
-      const objectType = content?.self?.type ?? this.data.object?.objectType ?? '';
-      const objectName = content?.self?.name ?? '';
+      const { objectType, objectName } = this.getRestoreObjectIdentity(content);
       if (this.useEnvSubstitution && config && objectType && objectName) {
         content = this.tokenService.applyPathBasedSubstitution(
           content,
@@ -205,6 +203,22 @@ export class RestoreDialogComponent implements OnInit {
 
   onClose(): void {
     this.dialogRef.close(this.result());
+  }
+
+  /**
+   * Reads type/name from backup envelope `content.self` when present; otherwise
+   * falls back to dialog data. Values are narrowed to string so callers can pass
+   * them to token helpers without unsafe `any`.
+   */
+  private getRestoreObjectIdentity(content: unknown): { objectType: string; objectName: string } {
+    const self =
+      content && typeof content === 'object' && 'self' in content
+        ? (content as { self: { type?: unknown; name?: unknown } }).self
+        : undefined;
+    const fromType = typeof self?.type === 'string' ? self.type : '';
+    const objectType = fromType || (this.data.object?.objectType ?? '');
+    const objectName = typeof self?.name === 'string' ? self.name : '';
+    return { objectType, objectName };
   }
 
   formatTimestamp(iso: string | undefined): string {

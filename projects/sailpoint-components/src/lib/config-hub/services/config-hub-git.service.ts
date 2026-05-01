@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { GitRepoSettings, GitCommit, BackupObject, BackupObjectType, CommitFile } from '../models/config-hub.models';
+import type { TokenPathsConfig } from './config-hub-token.service';
 
 const SETTINGS_KEY = 'config-hub-git-settings';
 
@@ -228,10 +229,7 @@ export class ConfigHubGitService {
    * Returns null if the file is absent (callers should fall back to the
    * built-in defaults via ConfigHubTokenService.getBuiltinConfig()).
    */
-  async getTokenPathsConfig(): Promise<{
-    typeAbbreviations: Record<string, string>;
-    tokenizablePaths: Record<string, Array<(string | number)[]>>;
-  } | null> {
+  async getTokenPathsConfig(): Promise<TokenPathsConfig | null> {
     const s = this.settings();
     if (!s) return null;
     const { owner, repo } = this.parseRepoUrl(s.repoUrl);
@@ -240,9 +238,9 @@ export class ConfigHubGitService {
       const url = `https://api.github.com/repos/${owner}/${repo}/contents/token-paths.json?ref=${encodeURIComponent(s.defaultBranch)}`;
       const res = await fetch(url, { headers: this.githubHeaders(s) });
       if (!res.ok) return null;
-      const data = await res.json();
+      const data = (await res.json()) as { content?: string };
       const content = atob((data.content as string).replace(/\n/g, ''));
-      return JSON.parse(content);
+      return JSON.parse(content) as TokenPathsConfig;
     } catch {
       return null;
     }
