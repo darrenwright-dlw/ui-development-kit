@@ -196,15 +196,22 @@ export class ConfigHubTokenService {
    * mirroring the naming convention in token-utils.mjs:
    *   {TYPE_ABBR}_{OBJECT_NAME}_{FIELD_SUFFIX}
    * e.g.  ROLE_SALESENGINEERING_OWNER_ID
+   *
+   * For LIFECYCLE_STATE objects the name segment is prefixed with the parent
+   * identity profile name so that "inactive" states in different profiles get
+   * distinct tokens (e.g. LC_HR_INACTIVE_... vs LC_FUSION_INACTIVE_...).
+   * Pass the full backup envelope as `content` to enable this — if omitted
+   * the disambiguation is skipped.
    */
   buildTokenName(
     config: TokenPathsConfig,
     objectType: string,
     objectName: string,
     fieldPath: (string | number)[],
+    content?: any,
   ): string {
     const typeAbbr = config.typeAbbreviations[objectType] ?? objectType.slice(0, 4).toUpperCase();
-    const namePrefix = this.nameToPrefix(objectName);
+    const namePrefix = this.nameToPrefix(this.qualifiedNameSegment(objectType, objectName, content));
     const suffix = this.fieldSuffix(fieldPath);
     return `${typeAbbr}_${namePrefix}_${suffix}`;
   }
@@ -232,7 +239,7 @@ export class ConfigHubTokenService {
       const currentValue = this.getValueAtPath(content, path);
       if (currentValue === undefined || currentValue === null || currentValue === '') continue;
 
-      const tokenName = this.buildTokenName(config, objectType, objectName, path);
+      const tokenName = this.buildTokenName(config, objectType, objectName, path, content);
       const targetValue = targetVars[tokenName];
 
       if (targetValue === undefined) {
@@ -272,7 +279,7 @@ export class ConfigHubTokenService {
       const currentValue = this.getValueAtPath(content, path);
       if (currentValue === undefined || currentValue === null || currentValue === '') continue;
 
-      const tokenName = this.buildTokenName(config, objectType, objectName, path);
+      const tokenName = this.buildTokenName(config, objectType, objectName, path, content);
       const targetValue = targetVars[tokenName];
 
       if (targetValue === undefined) {
@@ -309,6 +316,27 @@ export class ConfigHubTokenService {
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
+
+  /**
+   * Return the name segment used to build a token prefix, mirroring the
+   * special-case logic in getTokenPaths() in token-utils.mjs.
+   *
+   * For LIFECYCLE_STATE the segment is prefixed with the parent identity
+   * profile name so that duplicate state names (e.g. "inactive" / "active"
+   * appearing under multiple identity profiles) produce distinct tokens:
+   *   LC_HR_INACTIVE_...  vs  LC_FUSION_INACTIVE_...
+   *
+   * For all other types the segment is just the object's own self.name.
+   */
+  private qualifiedNameSegment(objectType: string, objectName: string, content?: any): string {
+    if (objectType === 'LIFECYCLE_STATE' && content) {
+      const profileName = content?.object?.identityProfileRef?.name;
+      if (profileName) {
+        return `${profileName}_${objectName}`;
+      }
+    }
+    return objectName;
+  }
 
   /**
    * Convert a display name to UPPER_SNAKE_CASE, mirroring nameToPrefix() in
