@@ -53,6 +53,7 @@ export class RepoSettingsComponent implements OnInit {
       sshKeyPath: [''],
       defaultBranch: ['main', required],
       backupsPath: ['backups', required],
+      varsPath: ['vars', required],
     });
 
     const existing = this.gitService.settings();
