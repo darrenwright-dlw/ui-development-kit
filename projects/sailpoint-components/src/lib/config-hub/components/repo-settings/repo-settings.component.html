@@ -24,6 +24,13 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Vars Path</mat-label>
+        <mat-icon matPrefix>tune</mat-icon>
+        <input matInput formControlName="varsPath" placeholder="vars" />
+        <mat-hint>Environment variable files (e.g. vars)</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="half-width">
         <mat-label>Default Branch</mat-label>
         <mat-icon matPrefix>call_split</mat-icon>
         <input matInput formControlName="defaultBranch" placeholder="main" />

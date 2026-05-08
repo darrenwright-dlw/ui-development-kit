@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { GitRepoSettings, GitCommit, BackupObject, BackupObjectType, CommitFile } from '../models/config-hub.models';
+import type { TokenPathsConfig } from './config-hub-token.service';
 
 const SETTINGS_KEY = 'config-hub-git-settings';
 
@@ -132,10 +133,6 @@ export class ConfigHubGitService {
     }
   }
 
-  /**
-   * Return the most recent commits that touch the configured backups path,
-   * sorted newest-first.  Used by the "By Commit" view.
-   */
   async getRecentCommits(limit = 50): Promise<GitCommit[]> {
     const s = this.settings();
     if (!s) return [];
@@ -159,10 +156,6 @@ export class ConfigHubGitService {
     }
   }
 
-  /**
-   * Return the list of backup objects changed by a specific commit.
-   * Parses file paths of the form `{backupsPath}/{OBJECT_TYPE}/{objectId}.json`.
-   */
   async getCommitFiles(sha: string): Promise<CommitFile[]> {
     const s = this.settings();
     if (!s) return [];
@@ -194,6 +187,89 @@ export class ConfigHubGitService {
     }
   }
 
+  // ── Vars (environment variable files) ────────────────────────────────────
+
+  /**
+   * Derive the source tenant name from the configured backupsPath.
+   * e.g. "backups/beta-15156" → "beta-15156"
+   */
+  getSourceVarsTenant(): string | null {
+    const s = this.settings();
+    if (!s) return null;
+    const parts = s.backupsPath.replace(/^\/|\/$/g, '').split('/');
+    const tenant = parts[parts.length - 1];
+    return tenant || null;
+  }
+
+  /**
+   * List available tenant vars files.
+   * Returns tenant names by stripping the `.vars.yaml` suffix.
+   */
+  async getVarsTenants(): Promise<string[]> {
+    const s = this.settings();
+    if (!s) return [];
+    const { owner, repo } = this.parseRepoUrl(s.repoUrl);
+    if (!owner || !repo) return [];
+    const varsPath = (s.varsPath ?? 'vars').replace(/^\/|\/$/g, '');
+    try {
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${varsPath}?ref=${encodeURIComponent(s.defaultBranch)}`;
+      const res = await fetch(url, { headers: this.githubHeaders(s) });
+      if (!res.ok) return [];
+      const items = await res.json() as any[];
+      return items
+        .filter((i: any) => i.type === 'file' && (i.name as string).endsWith('.vars.yaml'))
+        .map((i: any) => (i.name as string).replace(/\.vars\.yaml$/, ''));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Fetch and parse token-paths.json from the repo root.
+   * Returns null if the file is absent (callers should fall back to the
+   * built-in defaults via ConfigHubTokenService.getBuiltinConfig()).
+   */
+  async getTokenPathsConfig(): Promise<TokenPathsConfig | null> {
+    const s = this.settings();
+    if (!s) return null;
+    const { owner, repo } = this.parseRepoUrl(s.repoUrl);
+    if (!owner || !repo) return null;
+    try {
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/token-paths.json?ref=${encodeURIComponent(s.defaultBranch)}`;
+      const res = await fetch(url, { headers: this.githubHeaders(s) });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { content?: string };
+      const content = atob((data.content as string).replace(/\n/g, ''));
+      return JSON.parse(content) as TokenPathsConfig;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Fetch the raw YAML content of a tenant vars file.
+   * @param tenant  e.g. "production"  (without .vars.yaml extension)
+   */
+  async getVarsFile(tenant: string): Promise<string> {
+    const s = this.settings();
+    if (!s) return '';
+    const { owner, repo } = this.parseRepoUrl(s.repoUrl);
+    if (!owner || !repo) return '';
+    const varsPath = (s.varsPath ?? 'vars').replace(/^\/|\/$/g, '');
+    const filePath = `${varsPath}/${tenant}.vars.yaml`;
+    try {
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${encodeURIComponent(s.defaultBranch)}`;
+      const res = await fetch(url, { headers: this.githubHeaders(s) });
+      if (!res.ok) return '';
+      const data = await res.json();
+      return atob((data.content as string).replace(/\n/g, ''));
+    } catch {
+      return '';
+    }
+  }
+
+  // ── Utilities ─────────────────────────────────────────────────────────────
+
   parseRepoUrl(repoUrl: string): { owner: string; repo: string } {
     const clean = repoUrl.trim().replace(/\.git$/, '').replace(/\/$/, '');
     const httpsMatch = clean.match(/github\.com\/([^/]+)\/([^/]+)/i);
@@ -208,9 +284,6 @@ export class ConfigHubGitService {
       Accept: 'application/vnd.github.v3+json',
       'User-Agent': 'SailPoint-UI-Development-Kit',
     };
-    // Always use the PAT for REST API calls when one is available.
-    // SSH keys are for local git operations only and cannot authenticate
-    // the GitHub REST API — a PAT is required for private repo access.
     if (s.pat) {
       headers['Authorization'] = `Bearer ${s.pat}`;
     }
