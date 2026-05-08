@@ -5641,13 +5641,12 @@ export const getNotificationTemplate = (requestParameters: sdk.NotificationsV202
 /**
  * The notification service maintains metadata to construct the notification templates or supply any information during the event propagation. The data-store where this information is retrieved is called \"Global Context\" (a.k.a. notification template context). It defines a set of attributes  that will be available per tenant (organization).
  * @summary Get notification template context
- * @param {NotificationsV2025ApiGetNotificationsTemplateContextRequest} requestParameters Request parameters.
  * @param {*} [axiosOptions] Override http request option.
  * @throws {RequiredError}
  */
-export const getNotificationsTemplateContext = (requestParameters: sdk.NotificationsV2025ApiGetNotificationsTemplateContextRequest = {}, apiConfig: sdk.Configuration): Promise<ApiResponse<sdk.NotificationTemplateContextV2025>> => {
+export const getNotificationsTemplateContext = (apiConfig: sdk.Configuration): Promise<ApiResponse<sdk.NotificationTemplateContextV2025>> => {
     const notificationsv2025api = new sdk.NotificationsV2025Api(apiConfig);
-    return handleApiCall(() => notificationsv2025api.getNotificationsTemplateContext(requestParameters));
+    return handleApiCall(() => notificationsv2025api.getNotificationsTemplateContext());
 }
 /**
  * Retrieve a list of sender email addresses and their verification statuses
@@ -5663,13 +5662,12 @@ export const listFromAddresses = (requestParameters: sdk.NotificationsV2025ApiLi
 /**
  * Returns a list of notification preferences for tenant.
  * @summary List notification preferences for tenant.
- * @param {NotificationsV2025ApiListNotificationPreferencesRequest} requestParameters Request parameters.
  * @param {*} [axiosOptions] Override http request option.
  * @throws {RequiredError}
  */
-export const listNotificationPreferences = (requestParameters: sdk.NotificationsV2025ApiListNotificationPreferencesRequest = {}, apiConfig: sdk.Configuration): Promise<ApiResponse<sdk.PreferencesDtoV2025>> => {
+export const getNotificationPreferences = (apiConfig: sdk.Configuration): Promise<ApiResponse<sdk.PreferencesDtoV2025>> => {
     const notificationsv2025api = new sdk.NotificationsV2025Api(apiConfig);
-    return handleApiCall(() => notificationsv2025api.listNotificationPreferences(requestParameters));
+    return handleApiCall(() => notificationsv2025api.getNotificationPreferences());
 }
 /**
  * This lists the default templates used for notifications, such as emails from IdentityNow.

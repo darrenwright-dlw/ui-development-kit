@@ -2108,17 +2108,17 @@ async getNotificationTemplate(requestParameters: sdk.NotificationsV2025ApiGetNot
     await this.checkSessionBeforeCall();
     return this.electronAPI.getNotificationTemplate(requestParameters) as Promise<AxiosResponse<sdk.TemplateDtoV2025, any>>;
 }
-async getNotificationsTemplateContext(requestParameters: sdk.NotificationsV2025ApiGetNotificationsTemplateContextRequest = {}): Promise<AxiosResponse<sdk.NotificationTemplateContextV2025, any>> {
+async getNotificationsTemplateContext(): Promise<AxiosResponse<sdk.NotificationTemplateContextV2025, any>> {
     await this.checkSessionBeforeCall();
-    return this.electronAPI.getNotificationsTemplateContext(requestParameters) as Promise<AxiosResponse<sdk.NotificationTemplateContextV2025, any>>;
+    return this.electronAPI.getNotificationsTemplateContext() as Promise<AxiosResponse<sdk.NotificationTemplateContextV2025, any>>;
 }
 async listFromAddresses(requestParameters: sdk.NotificationsV2025ApiListFromAddressesRequest = {}): Promise<AxiosResponse<Array<sdk.EmailStatusDtoV2025>, any>> {
     await this.checkSessionBeforeCall();
     return this.electronAPI.listFromAddresses(requestParameters) as Promise<AxiosResponse<Array<sdk.EmailStatusDtoV2025>, any>>;
 }
-async listNotificationPreferences(requestParameters: sdk.NotificationsV2025ApiListNotificationPreferencesRequest = {}): Promise<AxiosResponse<sdk.PreferencesDtoV2025, any>> {
+async listNotificationPreferences(): Promise<AxiosResponse<sdk.PreferencesDtoV2025, any>> {
     await this.checkSessionBeforeCall();
-    return this.electronAPI.listNotificationPreferences(requestParameters) as Promise<AxiosResponse<sdk.PreferencesDtoV2025, any>>;
+    return this.electronAPI.listNotificationPreferences() as Promise<AxiosResponse<sdk.PreferencesDtoV2025, any>>;
 }
 async listNotificationTemplateDefaults(requestParameters: sdk.NotificationsV2025ApiListNotificationTemplateDefaultsRequest = {}): Promise<AxiosResponse<Array<sdk.TemplateDtoDefaultV2025>, any>> {
     await this.checkSessionBeforeCall();

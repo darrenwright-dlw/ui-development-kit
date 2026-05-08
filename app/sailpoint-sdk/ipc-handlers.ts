@@ -1569,14 +1569,14 @@ ipcMain.handle('get-mail-from-attributes', async (event, request: sdk.Notificati
 ipcMain.handle('get-notification-template', async (event, request: sdk.NotificationsV2025ApiGetNotificationTemplateRequest) => {
     return await sdkWrapper.getNotificationTemplate(request, apiConfig);
 });
-ipcMain.handle('get-notifications-template-context', async (event, request: sdk.NotificationsV2025ApiGetNotificationsTemplateContextRequest = {}) => {
-    return await sdkWrapper.getNotificationsTemplateContext(request, apiConfig);
+ipcMain.handle('get-notifications-template-context', async (event) => {
+    return await sdkWrapper.getNotificationsTemplateContext(apiConfig);
 });
 ipcMain.handle('list-from-addresses', async (event, request: sdk.NotificationsV2025ApiListFromAddressesRequest = {}) => {
     return await sdkWrapper.listFromAddresses(request, apiConfig);
 });
-ipcMain.handle('list-notification-preferences', async (event, request: sdk.NotificationsV2025ApiListNotificationPreferencesRequest = {}) => {
-    return await sdkWrapper.listNotificationPreferences(request, apiConfig);
+ipcMain.handle('list-notification-preferences', async (event) => {
+    return await sdkWrapper.getNotificationPreferences(apiConfig);
 });
 ipcMain.handle('list-notification-template-defaults', async (event, request: sdk.NotificationsV2025ApiListNotificationTemplateDefaultsRequest = {}) => {
     return await sdkWrapper.listNotificationTemplateDefaults(request, apiConfig);
